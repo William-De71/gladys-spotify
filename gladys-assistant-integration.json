@@ -1,0 +1,108 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Spotify",
+  "description": {
+    "en": "Control your Spotify Connect devices (play, pause, next, previous, volume) from Gladys.",
+    "fr": "Contrôlez vos appareils Spotify Connect (lecture, pause, suivant, précédent, volume) depuis Gladys."
+  },
+  "version": "1.0.0",
+  "docker_image": "ghcr.io/william-de71/gladys-spotify:1.0.0",
+  "gladys_version": ">=4.84.0",
+  "cover_image": "https://raw.githubusercontent.com/William-De71/gladys-spotify/master/cover.jpg",
+  "transports": ["cloud"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": { "en": "Connect your Spotify account", "fr": "Connectez votre compte Spotify" },
+      "description": {
+        "en": "This integration controls your Spotify Connect devices through the Spotify Web API. A Spotify Premium account is required to control playback. First create a free Spotify application, paste its Client ID and Client Secret below, then click \"Connect with Spotify\".",
+        "fr": "Cette intégration pilote vos appareils Spotify Connect via l'API Web de Spotify. Un compte Spotify Premium est nécessaire pour contrôler la lecture. Créez d'abord une application Spotify gratuite, collez son Client ID et son Client Secret ci-dessous, puis cliquez sur « Se connecter avec Spotify »."
+      },
+      "links": [
+        {
+          "url": "https://developer.spotify.com/dashboard",
+          "label": {
+            "en": "Spotify Developer Dashboard",
+            "fr": "Tableau de bord développeur Spotify"
+          }
+        },
+        {
+          "url": "https://developer.spotify.com/documentation/web-api",
+          "label": {
+            "en": "Spotify Web API documentation",
+            "fr": "Documentation de l'API Web Spotify"
+          }
+        }
+      ]
+    },
+    {
+      "key": "client_id",
+      "type": "string",
+      "label": { "en": "Client ID", "fr": "Client ID" },
+      "placeholder": {
+        "en": "Your Spotify app Client ID",
+        "fr": "Le Client ID de votre application Spotify"
+      },
+      "required": true
+    },
+    {
+      "key": "client_secret",
+      "type": "secret",
+      "label": { "en": "Client Secret", "fr": "Client Secret" },
+      "placeholder": {
+        "en": "Your Spotify app Client Secret",
+        "fr": "Le Client Secret de votre application Spotify"
+      },
+      "required": true
+    },
+    {
+      "key": "spotify_oauth",
+      "type": "oauth2",
+      "label": { "en": "Connect with Spotify", "fr": "Se connecter avec Spotify" },
+      "description": {
+        "en": "Once the Client ID and Client Secret are saved, click Connect to authorize Gladys on your Spotify account.",
+        "fr": "Une fois le Client ID et le Client Secret enregistrés, cliquez sur Se connecter pour autoriser Gladys sur votre compte Spotify."
+      }
+    },
+    {
+      "key": "manual_callback",
+      "type": "section",
+      "label": {
+        "en": "Browser could not return to Gladys?",
+        "fr": "Le navigateur n'a pas pu revenir à Gladys ?"
+      },
+      "description": {
+        "en": "Spotify only accepts a redirect address on 127.0.0.1, which means the machine running your browser. If you reach Gladys through a server IP address, the return lands on a blank or error page: this is expected, and the authorization did succeed. Copy the full address from your browser address bar, paste it below, save, then click \"Finish the connection\".",
+        "fr": "Spotify n'accepte qu'une adresse de redirection sur 127.0.0.1, qui désigne la machine où tourne votre navigateur. Si vous accédez à Gladys par l'adresse IP d'un serveur, le retour aboutit à une page blanche ou d'erreur : c'est normal, et l'autorisation a bien réussi. Copiez l'adresse complète depuis la barre d'adresse de votre navigateur, collez-la ci-dessous, enregistrez, puis cliquez sur « Terminer la connexion »."
+      }
+    },
+    {
+      "key": "callback_url",
+      "type": "string",
+      "label": { "en": "Returned address", "fr": "Adresse de retour" },
+      "placeholder": {
+        "en": "http://127.0.0.1:1444/dashboard/...?code=...&state=...",
+        "fr": "http://127.0.0.1:1444/dashboard/...?code=...&state=..."
+      }
+    }
+  ],
+  "actions": [
+    {
+      "key": "complete_connection",
+      "label": { "en": "Finish the connection", "fr": "Terminer la connexion" },
+      "timeout_seconds": 30
+    },
+    {
+      "key": "test_connection",
+      "label": { "en": "Test the connection", "fr": "Tester la connexion" },
+      "timeout_seconds": 30
+    },
+    {
+      "key": "disconnect",
+      "label": { "en": "Disconnect from Spotify", "fr": "Se déconnecter de Spotify" },
+      "timeout_seconds": 15
+    }
+  ]
+}
