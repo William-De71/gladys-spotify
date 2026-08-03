@@ -32,6 +32,8 @@ The user creates a Spotify application and pastes its **Client ID** and **Client
 - `onOAuthAuthorizeUrl` builds the Spotify authorization URL (scopes, `state`, PKCE `code_challenge`);
 - `onOAuthCallback` exchanges the returned code for the access + refresh tokens.
 
+The `redirect_uri` is provided by Gladys and used as-is — never hardcoded. Since [PR #2769](https://github.com/GladysAssistant/Gladys/pull/2769) the frontend passes the fixed HTTPS page `https://my.gladysassistant.com/redirect/oauth`, which unwraps the instance address from the `state` and bounces the browser back to the local Gladys. This works around Spotify rejecting any non-HTTPS, non-loopback redirect URI since April 2025. `toLoopbackRedirectUri()` returns HTTPS URIs untouched, so the flow needs no change here; the loopback rewrite only remains for older Gladys versions. The `state` is mandatory — the frontend refuses an authorize URL without one.
+
 Tokens are persisted through `gladys.setConfig()` under keys **not** declared in the `config_schema` (internal storage, never shown in the UI) and refreshed automatically. Two manifest actions are exposed: **Test the connection** and **Disconnect**.
 
 ## Local development

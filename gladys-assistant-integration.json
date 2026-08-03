@@ -17,8 +17,8 @@
       "type": "section",
       "label": { "en": "Connect your Spotify account", "fr": "Connectez votre compte Spotify" },
       "description": {
-        "en": "This integration controls your Spotify Connect devices through the Spotify Web API. A Spotify Premium account is required to control playback. First create a free Spotify application, paste its Client ID and Client Secret below, then click \"Connect with Spotify\".",
-        "fr": "Cette intégration pilote vos appareils Spotify Connect via l'API Web de Spotify. Un compte Spotify Premium est nécessaire pour contrôler la lecture. Créez d'abord une application Spotify gratuite, collez son Client ID et son Client Secret ci-dessous, puis cliquez sur « Se connecter avec Spotify »."
+        "en": "This integration controls your Spotify Connect devices through the Spotify Web API. A Spotify Premium account is required to control playback. First create a free Spotify application, declare the redirect URI shown below in it, paste its Client ID and Client Secret here, then click \"Connect with Spotify\".",
+        "fr": "Cette intégration pilote vos appareils Spotify Connect via l'API Web de Spotify. Un compte Spotify Premium est nécessaire pour contrôler la lecture. Créez d'abord une application Spotify gratuite, déclarez-y l'adresse de redirection affichée plus bas, collez son Client ID et son Client Secret ici, puis cliquez sur « Se connecter avec Spotify »."
       },
       "links": [
         {
@@ -74,8 +74,8 @@
         "fr": "Le navigateur n'a pas pu revenir à Gladys ?"
       },
       "description": {
-        "en": "Spotify only accepts a redirect address on 127.0.0.1, which means the machine running your browser. If you reach Gladys through a server IP address, the return lands on a blank or error page: this is expected, and the authorization did succeed. Copy the full address from your browser address bar, paste it below, save, then click \"Finish the connection\".",
-        "fr": "Spotify n'accepte qu'une adresse de redirection sur 127.0.0.1, qui désigne la machine où tourne votre navigateur. Si vous accédez à Gladys par l'adresse IP d'un serveur, le retour aboutit à une page blanche ou d'erreur : c'est normal, et l'autorisation a bien réussi. Copiez l'adresse complète depuis la barre d'adresse de votre navigateur, collez-la ci-dessous, enregistrez, puis cliquez sur « Terminer la connexion »."
+        "en": "The return from Spotify is normally automatic. If your browser lands on a blank or error page instead of coming back to Gladys, the authorization did still succeed: copy the full address from your browser address bar, paste it below, save, then click \"Finish the connection\".",
+        "fr": "Le retour depuis Spotify est normalement automatique. Si votre navigateur aboutit à une page blanche ou d'erreur au lieu de revenir dans Gladys, l'autorisation a tout de même réussi : copiez l'adresse complète depuis la barre d'adresse de votre navigateur, collez-la ci-dessous, enregistrez, puis cliquez sur « Terminer la connexion »."
       }
     },
     {
@@ -83,8 +83,8 @@
       "type": "string",
       "label": { "en": "Returned address", "fr": "Adresse de retour" },
       "placeholder": {
-        "en": "http://127.0.0.1:1444/dashboard/...?code=...&state=...",
-        "fr": "http://127.0.0.1:1444/dashboard/...?code=...&state=..."
+        "en": "http://192.168.1.50:1444/dashboard/...?code=...&state=...",
+        "fr": "http://192.168.1.50:1444/dashboard/...?code=...&state=..."
       }
     }
   ],
