@@ -6,16 +6,21 @@
     "en": "Control your Spotify Connect devices (play, pause, next, previous, volume) from Gladys.",
     "fr": "Contrôlez vos appareils Spotify Connect (lecture, pause, suivant, précédent, volume) depuis Gladys."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/william-de71/gladys-spotify:1.0.0",
+  "version": "1.0.1",
+  "docker_image": "ghcr.io/william-de71/gladys-spotify:1.0.1",
   "gladys_version": ">=4.84.0",
   "cover_image": "https://raw.githubusercontent.com/William-De71/gladys-spotify/master/cover.jpg",
-  "transports": ["cloud"],
+  "transports": [
+    "cloud"
+  ],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Connect your Spotify account", "fr": "Connectez votre compte Spotify" },
+      "label": {
+        "en": "Connect your Spotify account",
+        "fr": "Connectez votre compte Spotify"
+      },
       "description": {
         "en": "This integration controls your Spotify Connect devices through the Spotify Web API. A Spotify Premium account is required to control playback. First create a free Spotify application, declare the redirect URI shown below in it, paste its Client ID and Client Secret here, then click \"Connect with Spotify\".",
         "fr": "Cette intégration pilote vos appareils Spotify Connect via l'API Web de Spotify. Un compte Spotify Premium est nécessaire pour contrôler la lecture. Créez d'abord une application Spotify gratuite, déclarez-y l'adresse de redirection affichée plus bas, collez son Client ID et son Client Secret ici, puis cliquez sur « Se connecter avec Spotify »."
@@ -40,7 +45,10 @@
     {
       "key": "client_id",
       "type": "string",
-      "label": { "en": "Client ID", "fr": "Client ID" },
+      "label": {
+        "en": "Client ID",
+        "fr": "Client ID"
+      },
       "placeholder": {
         "en": "Your Spotify app Client ID",
         "fr": "Le Client ID de votre application Spotify"
@@ -50,7 +58,10 @@
     {
       "key": "client_secret",
       "type": "secret",
-      "label": { "en": "Client Secret", "fr": "Client Secret" },
+      "label": {
+        "en": "Client Secret",
+        "fr": "Client Secret"
+      },
       "placeholder": {
         "en": "Your Spotify app Client Secret",
         "fr": "Le Client Secret de votre application Spotify"
@@ -60,7 +71,10 @@
     {
       "key": "spotify_oauth",
       "type": "oauth2",
-      "label": { "en": "Connect with Spotify", "fr": "Se connecter avec Spotify" },
+      "label": {
+        "en": "Connect with Spotify",
+        "fr": "Se connecter avec Spotify"
+      },
       "description": {
         "en": "Once the Client ID and Client Secret are saved, click Connect to authorize Gladys on your Spotify account.",
         "fr": "Une fois le Client ID et le Client Secret enregistrés, cliquez sur Se connecter pour autoriser Gladys sur votre compte Spotify."
@@ -81,7 +95,10 @@
     {
       "key": "callback_url",
       "type": "string",
-      "label": { "en": "Returned address", "fr": "Adresse de retour" },
+      "label": {
+        "en": "Returned address",
+        "fr": "Adresse de retour"
+      },
       "placeholder": {
         "en": "http://192.168.1.50:1444/dashboard/...?code=...&state=...",
         "fr": "http://192.168.1.50:1444/dashboard/...?code=...&state=..."
@@ -91,17 +108,26 @@
   "actions": [
     {
       "key": "complete_connection",
-      "label": { "en": "Finish the connection", "fr": "Terminer la connexion" },
+      "label": {
+        "en": "Finish the connection",
+        "fr": "Terminer la connexion"
+      },
       "timeout_seconds": 30
     },
     {
       "key": "test_connection",
-      "label": { "en": "Test the connection", "fr": "Tester la connexion" },
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion"
+      },
       "timeout_seconds": 30
     },
     {
       "key": "disconnect",
-      "label": { "en": "Disconnect from Spotify", "fr": "Se déconnecter de Spotify" },
+      "label": {
+        "en": "Disconnect from Spotify",
+        "fr": "Se déconnecter de Spotify"
+      },
       "timeout_seconds": 15
     }
   ]
