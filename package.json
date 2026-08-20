@@ -1,6 +1,6 @@
 {
   "name": "gladys-spotify",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "description": "External integration to control your Spotify Connect devices (play, pause, next, previous, volume) from Gladys Assistant.",
   "type": "module",
