@@ -3,10 +3,10 @@
   "type": "device",
   "name": "Spotify",
   "description": {
-    "en": "Control your Spotify Connect devices (play, pause, next, previous, volume) from Gladys.",
-    "fr": "Contrôlez vos appareils Spotify Connect (lecture, pause, suivant, précédent, volume) depuis Gladys."
+    "en": "Control your Spotify Connect devices and launch playlists, recent tracks or favorites.",
+    "fr": "Contrôlez vos appareils Spotify Connect et lancez vos playlists, morceaux récents ou favoris."
   },
-  "version": "1.1.0",
+  "version": "1.3.0",
   "docker_image": "ghcr.io/william-de71/gladys-spotify:1.1.0",
   "gladys_version": ">=4.86.0",
   "cover_image": "https://raw.githubusercontent.com/William-De71/gladys-spotify/master/cover.jpg",
@@ -75,8 +75,8 @@
         "fr": "Se connecter avec Spotify"
       },
       "description": {
-        "en": "Once the Client ID and Client Secret are saved, click Connect to authorize Gladys on your Spotify account.",
-        "fr": "Une fois le Client ID et le Client Secret enregistrés, cliquez sur Se connecter pour autoriser Gladys sur votre compte Spotify."
+        "en": "Once the Client ID and Client Secret are saved, click Connect to authorize Gladys on your Spotify account. If Gladys later reports missing permissions after an update, click it again: your devices and Gladys scenes are kept.",
+        "fr": "Une fois le Client ID et le Client Secret enregistrés, cliquez sur Se connecter pour autoriser Gladys sur votre compte Spotify. Si Gladys signale plus tard des autorisations manquantes après une mise à jour, cliquez à nouveau dessus : vos appareils et vos scènes Gladys seront conservés."
       }
     },
     {
@@ -118,6 +118,18 @@
       "label": {
         "en": "Test the connection",
         "fr": "Tester la connexion"
+      },
+      "timeout_seconds": 30
+    },
+    {
+      "key": "refresh_content",
+      "label": {
+        "en": "Refresh Spotify content",
+        "fr": "Actualiser les contenus Spotify"
+      },
+      "description": {
+        "en": "Fetch your playlists, recently played tracks and favorites again and republish them on the Spotify device.",
+        "fr": "Récupère à nouveau vos playlists, vos morceaux récemment écoutés et vos favoris, et les republie sur l'appareil Spotify."
       },
       "timeout_seconds": 30
     },

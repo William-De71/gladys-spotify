@@ -1,6 +1,6 @@
 # Spotify integration
 
-This integration lets you control your **Spotify Connect** devices from Gladys Assistant: play, pause, previous / next track and volume.
+This integration lets you control your **Spotify Connect** devices from Gladys Assistant: play, pause, previous / next track, volume, and launch one of your playlists, a recently played track, or one of your favorites.
 
 ## Features
 
@@ -8,12 +8,14 @@ This integration lets you control your **Spotify Connect** devices from Gladys A
 - **Playback control**: play, pause, previous, next.
 - **Volume**: set the volume of the active device.
 - **Playback state**: Gladys reflects in real time whether a device is playing or paused.
-- **Actions**: test the connection and disconnect, directly from the configuration screen.
+- **"Spotify" device**: a separate, single device carries three lists — playlists, recent tracks, favorites. Picking an option there does not play anything: it is only remembered as a pending selection, and the play button of any Spotify Connect device launches it as soon as it is pressed.
+- **Actions**: test the connection, reauthorize, refresh the playlists/recent tracks/favorites, and disconnect, directly from the configuration screen.
 
 ## Requirements
 
 - A **Spotify Premium account** (required: the Spotify API does not allow controlling playback with a free account).
 - A **Spotify application** created on the developer dashboard (free), to get a Client ID and a Client Secret.
+- Gladys Assistant 4.86.0 or later (for the "Spotify" device's dynamic lists).
 
 ## Create your Spotify application
 
@@ -85,6 +87,26 @@ If, on the way back from Spotify, your browser shows an **error page** ("this si
 
 Only devices **currently online** (Spotify app open, speaker awake and connected) are returned by the Spotify API. If a device does not appear, open Spotify on it and run discovery again.
 
+## The "Spotify" device: playlists, recent tracks and favorites
+
+In addition to your Spotify Connect devices, the integration creates one separate, single device named **"Spotify"**. It carries three independent lists:
+
+- **Playlists**: your playlists (owned, followed, private and collaborative), listed alphabetically (`Playlist — <name>`).
+- **Recent tracks**: your recently played tracks, most recent first (`Récent — <artist> — <track>`).
+- **Favorites**: your liked/saved tracks, in the same format (`Favori — <artist> — <track>`).
+
+**Picking an option in one of these lists does not play anything.** It is only remembered as a _pending selection_, and the other two lists are automatically reset to "not selected" — the three are mutually exclusive, only one active selection at a time. It is the **play** button of a Spotify Connect device that acts on it: if a pending selection exists, it launches that instead of a plain resume, on that device. This works for any of your Spotify Connect devices (Mac, phone, speaker…), with no scene required.
+
+Since each option's value is a plain Spotify URI with no extra wrapping (e.g. `spotify:playlist:...`, `spotify:track:...`), it also stays available as-is in the list's own state, so it can be read and forwarded by a scene to another integration (e.g. a local Sonos "Play URI" feature). If the selected item is later deleted or becomes inaccessible, the playback attempt fails with a clear error instead of playing something else.
+
+All three lists are refreshed automatically after connecting, after a reauthorization, when scanning for devices, on integration startup, and every 15 to 30 minutes in the background — never on every dashboard view or scene run. Use the **"Refresh Spotify content"** action in the configuration screen to refresh them on demand; it reports how many playlists, recent tracks and favorites it found.
+
+Podcasts are not returned by Spotify's "recently played" endpoint, and local files cannot be relaunched by this integration, so neither appears in these lists.
+
+### Missing permissions after an update
+
+The playlists / recent tracks / favorites lists need permissions that an older connection may not have granted yet — favorites in particular, added later and requiring an additional permission (`user-library-read`). If Gladys reports missing permissions, or a list stays empty on an existing connection, click **"Connect with Spotify"** again in the configuration screen: Spotify shows the authorization screen again with the newly requested permissions (already-granted ones are approved in one click), without touching your existing devices, scenes, or the transport controls you already use.
+
 ## Troubleshooting
 
 - **Spotify shows "redirect_uri: Not matching configuration"** (or does not show the authorization screen): the address declared in your Spotify application does not exactly match the one Gladys uses. Check that the **Redirect URIs** field contains `https://my.gladysassistant.com/redirect/oauth`, with no trailing slash, and that you clicked **Add** then **Save**. If you enabled the "instance address" option, that is the address to declare instead.
@@ -97,4 +119,5 @@ Only devices **currently online** (Spotify app open, speaker awake and connected
 
 - A **Premium** account is mandatory for any playback command. Without it, Spotify returns a `PREMIUM_REQUIRED` error.
 - Only devices **online** at discovery time are listed.
-- Control covers Spotify Connect playback; it does not start a specific playlist or track (transport control only: play, pause, previous, next, volume).
+- Up to 200 playlists, the last 50 recently played tracks and 200 favorites (Spotify's own limits, or limits set by the integration) are listed; beyond that, the extra ones are dropped (alphabetically for playlists) and logged, never silently.
+- Podcasts and locally stored files never appear in the "Spotify" device's lists.
