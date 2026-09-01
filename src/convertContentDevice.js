@@ -62,6 +62,13 @@ export function convertContentDevice(gladys, contentState) {
     name: 'Spotify',
     external_id: ids.device,
     features: [
+      // Feature names, like the 6 Connect device features in
+      // convertToGladysDevice.js (Play, Pause, Previous...), are plain
+      // strings with no per-viewer translation (DeviceFeature.name in the
+      // SDK) - kept in English to match those. The option label prefixes
+      // (Playlist / Récent / Favori, see CONTENT_LABEL_PREFIX) stay French on
+      // purpose: a separate, deliberate choice tied to the worked examples
+      // this feature was specified against, not to be confused with these.
       buildSelectFeature(
         ids,
         CONTENT_FEATURE_KEYS.PLAYLISTS,
@@ -71,13 +78,13 @@ export function convertContentDevice(gladys, contentState) {
       buildSelectFeature(
         ids,
         CONTENT_FEATURE_KEYS.RECENT_TRACKS,
-        'Spotify - Morceaux récents',
+        'Spotify - Recent tracks',
         contentState.recentTracks.options,
       ),
       buildSelectFeature(
         ids,
         CONTENT_FEATURE_KEYS.FAVORITES,
-        'Spotify - Favoris',
+        'Spotify - Favorites',
         contentState.favorites.options,
       ),
     ],
