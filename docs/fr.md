@@ -99,7 +99,7 @@ En plus de vos appareils Spotify Connect, l'intégration crée un appareil sépa
 
 Comme la valeur de chaque option est une URI Spotify standard sans emballage supplémentaire (par ex. `spotify:playlist:...`, `spotify:track:...`), elle reste aussi disponible telle quelle dans l'état de la liste elle-même, et peut donc être lue et transmise par une scène à une autre intégration (par ex. une fonctionnalité locale « Lire une URI » d'une enceinte Sonos). Si l'élément sélectionné est ensuite supprimé ou devient inaccessible, la tentative de lecture échoue avec un message d'erreur explicite au lieu de lancer autre chose.
 
-Les trois listes sont actualisées automatiquement après une connexion, après une réautorisation, lors d'une recherche d'appareils, au démarrage de l'intégration, et toutes les 15 à 30 minutes en arrière-plan — jamais à chaque affichage du tableau de bord ou exécution d'une scène. Utilisez l'action **« Actualiser les contenus Spotify »** dans l'écran de configuration pour les actualiser à la demande ; elle indique le nombre de playlists, de morceaux récents et de favoris trouvés.
+Les trois listes sont actualisées automatiquement après une connexion, après une réautorisation, lors d'une recherche d'appareils, au démarrage de l'intégration, et toutes les 20 minutes en arrière-plan — jamais à chaque affichage du tableau de bord ou exécution d'une scène. Utilisez l'action **« Actualiser les contenus Spotify »** dans l'écran de configuration pour les actualiser à la demande ; elle indique le nombre de playlists, de morceaux récents et de favoris trouvés.
 
 Les podcasts ne sont pas renvoyés par l'endpoint Spotify des écoutes récentes, et les fichiers locaux ne peuvent pas être relancés par cette intégration : ni les uns ni les autres n'apparaissent donc dans ces listes.
 
@@ -121,3 +121,4 @@ Les listes playlists / morceaux récents / favoris nécessitent des autorisation
 - Seuls les appareils **en ligne** au moment de la découverte sont listés.
 - Jusqu'à 200 playlists, les 50 derniers morceaux écoutés et 200 favoris (limites propres à Spotify ou fixées par l'intégration) sont listés ; au-delà, les éléments en trop sont retirés (par ordre alphabétique pour les playlists) et cette troncature est journalisée, jamais silencieuse.
 - Les podcasts et les fichiers stockés localement n'apparaissent jamais dans les listes de l'appareil « Spotify ».
+- La sélection en attente ne vit qu'en mémoire. Si l'intégration redémarre entre le choix d'une option et l'appui sur Play, le select affiche toujours le choix sur le tableau de bord, mais Play fait une simple reprise au lieu de le lancer — resélectionnez-le si ça arrive.

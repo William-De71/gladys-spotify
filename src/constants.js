@@ -25,8 +25,12 @@ export const SCOPES = [
 // Bump this integer every time SCOPES gains a new entry. Stored in the config
 // (CONFIG_KEYS.SPOTIFY_SCOPE_VERSION) right after a successful authorization,
 // so a connection created under a previous version can be told apart from one
-// that already carries the current permissions.
-export const SPOTIFY_SCOPE_VERSION = 3;
+// that already carries the current permissions. Starts at 1: no connection
+// made before this mechanism existed ever stored a version, so an existing
+// connection's stored value reads as 0 (missing) and is correctly detected as
+// older than this regardless of the exact starting number - but 1 is what
+// the very first version bump actually is.
+export const SPOTIFY_SCOPE_VERSION = 1;
 
 const BASE_API = 'https://api.spotify.com/v1';
 

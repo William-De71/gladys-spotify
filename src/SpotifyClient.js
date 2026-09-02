@@ -403,8 +403,10 @@ export class SpotifyClient {
       // on the device) - logging the raw outcome of every write is the only
       // way to tell "Spotify rejected it" apart from "Spotify accepted it but
       // the device silently did nothing" when troubleshooting a report of a
-      // command that visibly had no effect.
-      logger.info(
+      // command that visibly had no effect. debug, not info: every transport
+      // button press and every skipUntilPlaying iteration writes here, and an
+      // actual failure already surfaces through a thrown/logged error below.
+      logger.debug(
         `Spotify API ${method} ${url} -> ${response.status}${rawBody ? ` ${rawBody.slice(0, 300)}` : ''}`,
       );
     }
@@ -559,10 +561,11 @@ export class SpotifyClient {
    * response. Queueing the track then skipping to it is the workaround
    * several other Spotify integrations use for this exact, long-standing
    * `uris` unreliability - see skipUntilPlaying for why a single "next" is
-   * not enough on its own.
+   * not enough on its own, and for why it is NOT awaited here.
    * @param {string} deviceId - The Spotify device id to play on.
    * @param {string} trackUri - The Spotify track URI (e.g. `spotify:track:...`).
-   * @returns {Promise<void>} Resolves when the command is sent.
+   * @returns {Promise<void>} Resolves once the track is durably queued (not
+   *   once it is confirmed playing - see skipUntilPlaying).
    */
   async playTrackUri(deviceId, trackUri) {
     await this.transferPlayback(deviceId);
@@ -573,7 +576,16 @@ export class SpotifyClient {
       undefined,
       { swallowRestriction: false },
     );
-    await this.skipUntilPlaying(deviceId, trackUri);
+    // Not awaited on purpose: Gladys core gives a plain device command a
+    // fixed 5s to ack (COMMAND_TIMEOUT_MS, not overridable for a device
+    // command the way a manifest action can declare its own timeout_seconds)
+    // - skipUntilPlaying's worst case (SKIP_UNTIL_PLAYING_MAX_ATTEMPTS skips)
+    // comfortably exceeds that on its own. The track is already durably
+    // queued at this point; reaching it is a best-effort continuation, not
+    // something the command's caller needs to block on.
+    this.skipUntilPlaying(deviceId, trackUri).catch((e) => {
+      logger.debug(`Spotify: skipUntilPlaying failed for ${trackUri} on ${deviceId}: ${e.message}`);
+    });
   }
 
   /**

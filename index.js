@@ -89,12 +89,27 @@ async function publishDevicesIfConnected() {
 /**
  * Refresh the "Spotify content" cache then republish devices so their
  * `supported_options` reflect it (upserted in place by the core, no device
- * recreation). Swallows errors: a failed content refresh must not take down
- * the transport-control features.
- * @returns {Promise<{playlistCount: number, trackCount: number, favoriteCount: number}>} The refreshed counts.
+ * recreation). Swallows a failed content refresh (e.g. a missing scope on an
+ * existing connection, or a transient Spotify error): callers that also need
+ * to (re)start the playback-state push and content-refresh loops (onConnect,
+ * onOAuthCallback) must be able to do so regardless, since those loops drive
+ * the transport-control features and have nothing to do with content having
+ * refreshed successfully. Falls back to whatever the cache already held.
+ * @returns {Promise<{playlistCount: number, trackCount: number, favoriteCount: number}>} The refreshed counts, or the previous ones on failure.
  */
 async function refreshContentAndRepublish() {
-  const counts = await refreshContent(client, contentState);
+  let counts = {
+    playlistCount: contentState.playlists.count,
+    trackCount: contentState.recentTracks.count,
+    favoriteCount: contentState.favorites.count,
+  };
+  try {
+    counts = await refreshContent(client, contentState);
+  } catch (e) {
+    logger.error(
+      `Spotify: content refresh failed, keeping the previous content cache: ${e.message}`,
+    );
+  }
   await publishDevicesIfConnected();
   return counts;
 }
@@ -133,9 +148,7 @@ function stopContentRefreshIfRunning() {
 gladys.onScanRequest(async () => {
   logger.info('onScanRequest -> refreshing Spotify content and publishing discovered devices');
   if (client.isConnected()) {
-    await refreshContentAndRepublish().catch((e) =>
-      logger.error(`Spotify: content refresh on scan failed: ${e.message}`),
-    );
+    await refreshContentAndRepublish();
   } else {
     await publishDevicesIfConnected();
   }

@@ -99,7 +99,7 @@ In addition to your Spotify Connect devices, the integration creates one separat
 
 Since each option's value is a plain Spotify URI with no extra wrapping (e.g. `spotify:playlist:...`, `spotify:track:...`), it also stays available as-is in the list's own state, so it can be read and forwarded by a scene to another integration (e.g. a local Sonos "Play URI" feature). If the selected item is later deleted or becomes inaccessible, the playback attempt fails with a clear error instead of playing something else.
 
-All three lists are refreshed automatically after connecting, after a reauthorization, when scanning for devices, on integration startup, and every 15 to 30 minutes in the background — never on every dashboard view or scene run. Use the **"Refresh Spotify content"** action in the configuration screen to refresh them on demand; it reports how many playlists, recent tracks and favorites it found.
+All three lists are refreshed automatically after connecting, after a reauthorization, when scanning for devices, on integration startup, and every 20 minutes in the background — never on every dashboard view or scene run. Use the **"Refresh Spotify content"** action in the configuration screen to refresh them on demand; it reports how many playlists, recent tracks and favorites it found.
 
 Podcasts are not returned by Spotify's "recently played" endpoint, and local files cannot be relaunched by this integration, so neither appears in these lists.
 
@@ -121,3 +121,4 @@ The playlists / recent tracks / favorites lists need permissions that an older c
 - Only devices **online** at discovery time are listed.
 - Up to 200 playlists, the last 50 recently played tracks and 200 favorites (Spotify's own limits, or limits set by the integration) are listed; beyond that, the extra ones are dropped (alphabetically for playlists) and logged, never silently.
 - Podcasts and locally stored files never appear in the "Spotify" device's lists.
+- The pending selection lives in memory only. If the integration restarts between picking an option and pressing Play, the select still shows the choice on the dashboard, but Play does a plain resume instead of launching it — pick it again if that happens.

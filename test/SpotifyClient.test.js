@@ -29,6 +29,18 @@ function stubFetch(fn) {
   };
 }
 
+/**
+ * Resolve after a delay - used to let playTrackUri()'s detached
+ * skipUntilPlaying() continuation run before asserting on it.
+ * @param {number} ms - Milliseconds to wait.
+ * @returns {Promise<void>} Resolves once the delay elapses.
+ */
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 test('play() swallows a generic 403 (redundant/harmless transport command)', async () => {
   const restore = stubFetch(
     async () => new Response('Player restriction violated', { status: 403 }),
@@ -121,23 +133,30 @@ function stubPlayTrackUriFetch(trackUri, mismatchesBeforeMatch) {
   return { restore, calls };
 }
 
-test('playTrackUri() transfers playback, then queues the track and skips to it (not a direct `uris` play)', async () => {
+test('playTrackUri() transfers playback and queues the track (not a direct `uris` play), then lets the skip run in the background', async () => {
   const { restore, calls } = stubPlayTrackUriFetch('spotify:track:abc', 0);
   try {
     const client = connectedClient();
+    // Resolving at all proves it does not block on skipUntilPlaying's loop:
+    // Gladys core's fixed 5s command-ack window (see playTrackUri's doc
+    // comment) must never be at the mercy of that loop's worst case.
     await client.playTrackUri('device1', 'spotify:track:abc');
+
+    const writes = calls.filter((c) => c.method !== 'GET');
+    assert.equal(writes[0].method, 'PUT');
+    assert.match(writes[0].url, /\/me\/player$/);
+    assert.equal(writes[1].method, 'POST');
+    assert.match(
+      writes[1].url,
+      /\/me\/player\/queue\?uri=spotify%3Atrack%3Aabc&device_id=device1$/,
+    );
+
+    // The background skip does eventually happen too.
+    await sleep(600);
+    assert.ok(calls.some((c) => c.url.includes('/next')));
   } finally {
     restore();
   }
-
-  const writes = calls.filter((c) => c.method !== 'GET');
-  assert.equal(writes.length, 3);
-  assert.equal(writes[0].method, 'PUT');
-  assert.match(writes[0].url, /\/me\/player$/);
-  assert.equal(writes[1].method, 'POST');
-  assert.match(writes[1].url, /\/me\/player\/queue\?uri=spotify%3Atrack%3Aabc&device_id=device1$/);
-  assert.equal(writes[2].method, 'POST');
-  assert.match(writes[2].url, /\/me\/player\/next\?device_id=device1$/);
 });
 
 test('callApi() does not throw on a successful response with a non-JSON body', async () => {
@@ -170,6 +189,7 @@ test('playTrackUri() reaches next() after a queue response with a non-JSON body'
   try {
     const client = connectedClient();
     await client.playTrackUri('device1', 'spotify:track:abc');
+    await sleep(600);
   } finally {
     restore();
   }
@@ -177,13 +197,13 @@ test('playTrackUri() reaches next() after a queue response with a non-JSON body'
   assert.ok(calls.some((c) => c.url.includes('/next')));
 });
 
-test('playTrackUri() self-heals through a leftover queue by skipping until the track matches', async () => {
+test('skipUntilPlaying() self-heals through a leftover queue by skipping until the track matches', async () => {
   // Simulates 2 stale items already queued ahead of ours from earlier tests:
   // the first 2 next()+check cycles land on the wrong track, the 3rd is ours.
   const { restore, calls } = stubPlayTrackUriFetch('spotify:track:abc', 2);
   try {
     const client = connectedClient();
-    await client.playTrackUri('device1', 'spotify:track:abc');
+    await client.skipUntilPlaying('device1', 'spotify:track:abc');
   } finally {
     restore();
   }
