@@ -1,6 +1,6 @@
 # Intégration Spotify
 
-Cette intégration permet de contrôler vos appareils **Spotify Connect** depuis Gladys Assistant : lecture, pause, morceau précédent / suivant et volume.
+Cette intégration permet de contrôler vos appareils **Spotify Connect** depuis Gladys Assistant : lecture, pause, morceau précédent / suivant, volume, et lancer l'une de vos playlists, un morceau récemment écouté ou un de vos favoris.
 
 ## Fonctionnalités
 
@@ -8,12 +8,14 @@ Cette intégration permet de contrôler vos appareils **Spotify Connect** depuis
 - **Contrôle de la lecture** : lecture, pause, précédent, suivant.
 - **Volume** : réglage du volume de l'appareil actif.
 - **État de lecture** : Gladys reflète en temps réel si un appareil est en lecture ou en pause.
-- **Actions** : tester la connexion et se déconnecter, directement depuis l'écran de configuration.
+- **Appareil « Spotify »** : un appareil séparé, unique, porte trois listes — playlists, morceaux récents, favoris. Choisir une option n'y lance rien : elle est simplement mémorisée comme sélection en attente, et le bouton lecture de n'importe quel appareil Spotify Connect la lance dès qu'on l'actionne.
+- **Actions** : tester la connexion, réautoriser, actualiser les playlists/morceaux récents/favoris, et se déconnecter, directement depuis l'écran de configuration.
 
 ## Prérequis
 
 - Un **compte Spotify Premium** (obligatoire : l'API Spotify ne permet pas de contrôler la lecture avec un compte gratuit).
 - Une **application Spotify** créée sur le tableau de bord développeur (gratuit), pour obtenir un Client ID et un Client Secret.
+- Gladys Assistant 4.86.0 ou supérieur (pour les listes dynamiques de l'appareil « Spotify »).
 
 ## Créer votre application Spotify
 
@@ -85,6 +87,26 @@ Si, au retour de Spotify, votre navigateur affiche une **page d'erreur** (« imp
 
 Seuls les appareils **actuellement en ligne** (application Spotify ouverte, enceinte allumée et connectée) sont renvoyés par l'API Spotify. Si un appareil n'apparaît pas, ouvrez Spotify dessus puis relancez une découverte.
 
+## L'appareil « Spotify » : playlists, morceaux récents et favoris
+
+En plus de vos appareils Spotify Connect, l'intégration crée un appareil séparé et unique nommé **« Spotify »**. Il porte trois listes indépendantes :
+
+- **Playlists** : vos playlists (possédées, suivies, privées et collaboratives), par ordre alphabétique (`Playlist — <nom>`).
+- **Morceaux récents** : vos morceaux récemment écoutés, du plus récent au plus ancien (`Récent — <artiste> — <morceau>`).
+- **Favoris** : vos morceaux mis en favori (« likés »), dans le même format (`Favori — <artiste> — <morceau>`).
+
+**Choisir une option dans l'une de ces listes ne lance rien.** Elle est seulement mémorisée comme _sélection en attente_, et les deux autres listes sont automatiquement remises à « pas sélectionné » — les trois sont mutuellement exclusives, une seule sélection active à la fois. C'est le bouton **lecture** d'un appareil Spotify Connect qui la déclenche : s'il existe une sélection en attente, il lance celle-ci sur cet appareil au lieu d'une simple reprise de lecture. Cela fonctionne pour n'importe lequel de vos appareils Spotify Connect (Mac, téléphone, enceinte…), sans avoir besoin de créer une scène.
+
+Comme la valeur de chaque option est une URI Spotify standard sans emballage supplémentaire (par ex. `spotify:playlist:...`, `spotify:track:...`), elle reste aussi disponible telle quelle dans l'état de la liste elle-même, et peut donc être lue et transmise par une scène à une autre intégration (par ex. une fonctionnalité locale « Lire une URI » d'une enceinte Sonos). Si l'élément sélectionné est ensuite supprimé ou devient inaccessible, la tentative de lecture échoue avec un message d'erreur explicite au lieu de lancer autre chose.
+
+Les trois listes sont actualisées automatiquement après une connexion, après une réautorisation, lors d'une recherche d'appareils, au démarrage de l'intégration, et toutes les 20 minutes en arrière-plan — jamais à chaque affichage du tableau de bord ou exécution d'une scène. Utilisez l'action **« Actualiser les contenus Spotify »** dans l'écran de configuration pour les actualiser à la demande ; elle indique le nombre de playlists, de morceaux récents et de favoris trouvés.
+
+Les podcasts ne sont pas renvoyés par l'endpoint Spotify des écoutes récentes, et les fichiers locaux ne peuvent pas être relancés par cette intégration : ni les uns ni les autres n'apparaissent donc dans ces listes.
+
+### Autorisations manquantes après une mise à jour
+
+Les listes playlists / morceaux récents / favoris nécessitent des autorisations qu'une connexion plus ancienne peut ne pas avoir accordées — en particulier les favoris, ajoutés après coup et qui demandent une autorisation supplémentaire (`user-library-read`). Si Gladys signale des autorisations manquantes, ou si une liste reste vide sur une connexion existante, cliquez à nouveau sur **« Se connecter avec Spotify »** dans l'écran de configuration : Spotify réaffiche l'écran d'autorisation avec les nouvelles permissions demandées (les autorisations déjà accordées s'acceptent en un clic), sans toucher à vos appareils, vos scènes ou aux commandes de transport déjà utilisées.
+
 ## Dépannage
 
 - **Spotify affiche « redirect_uri: Not matching configuration »** (ou n'affiche pas l'écran d'autorisation) : l'adresse déclarée dans votre application Spotify ne correspond pas exactement à celle utilisée par Gladys. Vérifiez que le champ **Redirect URIs** contient bien `https://my.gladysassistant.com/redirect/oauth`, sans slash final, et que vous avez cliqué sur **Add** puis **Save**. Si vous avez activé l'option « adresse de l'instance », c'est cette adresse-là qu'il faut déclarer.
@@ -97,4 +119,6 @@ Seuls les appareils **actuellement en ligne** (application Spotify ouverte, ence
 
 - Un compte **Premium** est indispensable pour toute commande de lecture. Sans lui, Spotify renvoie une erreur `PREMIUM_REQUIRED`.
 - Seuls les appareils **en ligne** au moment de la découverte sont listés.
-- Le contrôle porte sur la lecture Spotify Connect ; il ne permet pas de lancer une playlist ou un titre précis (contrôle transport uniquement : lecture, pause, précédent, suivant, volume).
+- Jusqu'à 200 playlists, les 50 derniers morceaux écoutés et 200 favoris (limites propres à Spotify ou fixées par l'intégration) sont listés ; au-delà, les éléments en trop sont retirés (par ordre alphabétique pour les playlists) et cette troncature est journalisée, jamais silencieuse.
+- Les podcasts et les fichiers stockés localement n'apparaissent jamais dans les listes de l'appareil « Spotify ».
+- La sélection en attente ne vit qu'en mémoire. Si l'intégration redémarre entre le choix d'une option et l'appui sur Play, le select affiche toujours le choix sur le tableau de bord, mais Play fait une simple reprise au lieu de le lancer — resélectionnez-le si ça arrive.

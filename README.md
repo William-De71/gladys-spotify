@@ -6,23 +6,26 @@ Built on the [Gladys integration SDK](https://github.com/GladysAssistant/integra
 
 ## What it does
 
-| Spotify object          | Gladys support                                      |
-| ----------------------- | --------------------------------------------------- |
-| Spotify Connect devices | One Gladys device per online device                 |
-| Playback                | Play, pause, previous, next (transport control)     |
-| Volume                  | Set the volume of the active device (0-100)         |
-| Playback state          | Read-only playing/paused state, pushed in real time |
+| Spotify object          | Gladys support                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| Spotify Connect devices | One Gladys device per online device                                                                   |
+| Playback                | Play, pause, previous, next (transport control); Play launches the pending selection if any           |
+| Volume                  | Set the volume of the active device (0-100)                                                           |
+| Playback state          | Read-only playing/paused state, pushed in real time                                                   |
+| Spotify content         | Separate "Spotify" device: 3 mutually-exclusive `text`/`select` (playlists, recent tracks, favorites) |
 
 A **Spotify Premium** account is required to control playback.
 
 ## Architecture
 
 ```
-index.js                     SDK wiring: OAuth2 flow, handlers, manifest actions
-src/SpotifyClient.js         Spotify Web API client: OAuth (PKCE), token refresh, calls
-src/devices.js               discovery / setValue / playback-state push orchestration
-src/convertToGladysDevice.js Spotify device -> Gladys device/feature conversion
-src/constants.js             endpoints, scopes, config keys, timings
+index.js                      SDK wiring: OAuth2 flow, handlers, manifest actions
+src/SpotifyClient.js          Spotify Web API client: OAuth (PKCE), token refresh, calls
+src/devices.js                discovery / setValue / playback-state + content refresh orchestration
+src/convertToGladysDevice.js  Spotify Connect device -> Gladys device/feature conversion
+src/convertContentDevice.js   the fixed "Spotify" content device (3 selects) -> Gladys device/feature
+src/content.js                playlists + recent tracks + favorites -> select options, value parsing (pure, no I/O)
+src/constants.js              endpoints, scopes, config keys, timings, content limits
 ```
 
 ## Authentication model (OAuth2 + PKCE)

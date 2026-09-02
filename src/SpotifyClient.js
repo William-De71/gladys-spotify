@@ -20,11 +20,31 @@ import { logger } from '@gladysassistant/integration-sdk';
 import {
   API,
   SCOPES,
+  SPOTIFY_SCOPE_VERSION,
   CONFIG_KEYS,
   CONFIG_SCHEMA_KEYS,
   LOOPBACK_HOST,
   TOKEN_EXPIRATION_MARGIN_IN_MS,
+  PLAYLISTS_PAGE_SIZE,
+  MAX_PLAYLISTS,
+  RECENTLY_PLAYED_LIMIT,
+  FAVORITES_PAGE_SIZE,
+  MAX_FAVORITES,
+  TRANSFER_PLAYBACK_SETTLE_MS,
+  SKIP_UNTIL_PLAYING_MAX_ATTEMPTS,
+  SKIP_UNTIL_PLAYING_CHECK_DELAY_MS,
 } from './constants.js';
+
+/**
+ * Resolve after a delay.
+ * @param {number} ms - Milliseconds to wait.
+ * @returns {Promise<void>} Resolves once the delay elapses.
+ */
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 /**
  * Rewrite a Gladys redirect URI to its loopback form.
@@ -62,6 +82,10 @@ export class SpotifyClient {
     this.accessToken = null;
     this.refreshToken = null;
     this.tokenExpiresAt = 0;
+    // Set after a command hits a Spotify HTTP 429 (Retry-After, ms epoch). While
+    // in the future, callApi refuses new requests immediately instead of
+    // hammering Spotify again before the cooldown it asked for has elapsed.
+    this.rateLimitedUntil = 0;
   }
 
   /**
@@ -118,9 +142,16 @@ export class SpotifyClient {
    * The SDK provides the redirectUri; we keep the state + code_verifier for the
    * callback.
    * @param {string} redirectUri - The redirect URI provided by Gladys.
+   * @param {object} [options] - { forceConsent }.
+   * @param {boolean} [options.forceConsent] - Force Spotify to show the
+   *   permission dialog even if the user already authorized this app, so a
+   *   reauthorization after a scope bump is visibly re-consented rather than
+   *   silently reusing the old grant. Always true in practice: the single
+   *   "Connect with Spotify" button doubles as the reauthorize action, so it
+   *   must show up-to-date consent every time it is clicked.
    * @returns {Promise<string>} The authorization URL.
    */
-  async buildAuthorizeUrl(redirectUri) {
+  async buildAuthorizeUrl(redirectUri, { forceConsent = false } = {}) {
     const { clientId, clientSecret } = await this.getCredentials();
     if (!clientId || !clientSecret) {
       throw new Error('Spotify is not configured: fill in the Client ID and Client Secret first.');
@@ -144,7 +175,8 @@ export class SpotifyClient {
       `&redirect_uri=${encodeURIComponent(loopbackRedirectUri)}` +
       `&scope=${encodeURIComponent(SCOPES.join(' '))}` +
       `&state=${this.state}` +
-      `&code_challenge_method=S256&code_challenge=${codeChallenge}`
+      `&code_challenge_method=S256&code_challenge=${codeChallenge}` +
+      (forceConsent ? '&show_dialog=true' : '')
     );
   }
 
@@ -226,6 +258,12 @@ export class SpotifyClient {
       refreshToken: data.refresh_token,
       expiresIn: data.expires_in,
     });
+    // Record the scope version only now that the exchange succeeded: an
+    // abandoned or refused (re)authorization must never bump it, or a
+    // still-outdated connection would stop being flagged as such.
+    await this.gladys.setConfig({
+      [CONFIG_KEYS.SPOTIFY_SCOPE_VERSION]: String(SPOTIFY_SCOPE_VERSION),
+    });
     // Clear the one-time PKCE material now that it has been used.
     await this.gladys.setConfig({
       [CONFIG_KEYS.OAUTH_STATE]: '',
@@ -233,6 +271,22 @@ export class SpotifyClient {
       [CONFIG_KEYS.OAUTH_REDIRECT_URI]: '',
     });
     logger.info('Spotify tokens obtained and stored.');
+  }
+
+  /**
+   * Whether the current connection was authorized under an older, narrower
+   * scope list than the one this version of the integration needs (e.g. before
+   * the "Spotify content" feature added playlist/recently-played scopes).
+   * @returns {Promise<boolean>} True if the user should be pointed at
+   *   "Connect with Spotify" again to grant the missing permissions.
+   */
+  async needsReauthorization() {
+    if (!this.isConnected()) {
+      return false;
+    }
+    const config = (await this.gladys.getConfig()) || {};
+    const storedVersion = Number(config[CONFIG_KEYS.SPOTIFY_SCOPE_VERSION]) || 0;
+    return storedVersion < SPOTIFY_SCOPE_VERSION;
   }
 
   /**
@@ -303,9 +357,21 @@ export class SpotifyClient {
    * @param {string} method - HTTP method.
    * @param {string} url - Full URL.
    * @param {object} [body] - Optional JSON body.
+   * @param {object} [options] - { swallowRestriction }.
+   * @param {boolean} [options.swallowRestriction] - Treat a generic 403 (no
+   *   PREMIUM_REQUIRED, no scope issue) as a harmless, redundant command and
+   *   resolve silently instead of throwing. True by default: fits a bare
+   *   transport command (e.g. "next" with nothing queued next). Explicit
+   *   content playback (playContext/playTrackUri) turns this off - a track or
+   *   playlist the user just picked failing to start must always surface,
+   *   never fail silently and leave the player looking merely unresponsive.
    * @returns {Promise<object|null>} Parsed JSON, or null on an empty response.
    */
-  async callApi(method, url, body = undefined) {
+  async callApi(method, url, body = undefined, { swallowRestriction = true } = {}) {
+    if (Date.now() < this.rateLimitedUntil) {
+      const remainingSeconds = Math.ceil((this.rateLimitedUntil - Date.now()) / 1000);
+      throw new Error(`Spotify rate limit in effect, try again in ${remainingSeconds}s.`);
+    }
     const accessToken = await this.getAccessToken();
     const options = {
       method,
@@ -322,22 +388,63 @@ export class SpotifyClient {
       options.headers.Authorization = `Bearer ${this.accessToken}`;
       response = await fetch(url, options);
     }
+    if (response.status === 429) {
+      // Respect Retry-After and stop calling Spotify until it elapses, instead
+      // of looping aggressively (no automatic retry here: the caller decides
+      // whether to try again later).
+      const retryAfterSeconds = Number(response.headers.get('Retry-After')) || 5;
+      this.rateLimitedUntil = Date.now() + retryAfterSeconds * 1000;
+      throw new Error(`Spotify rate limit reached, try again in ${retryAfterSeconds}s.`);
+    }
     const rawBody = await response.text();
+    if (method !== 'GET') {
+      // Spotify Connect commands are fire-and-forget from the API's point of
+      // view (a 2xx only means "accepted", never "actually started playing"
+      // on the device) - logging the raw outcome of every write is the only
+      // way to tell "Spotify rejected it" apart from "Spotify accepted it but
+      // the device silently did nothing" when troubleshooting a report of a
+      // command that visibly had no effect. debug, not info: every transport
+      // button press and every skipUntilPlaying iteration writes here, and an
+      // actual failure already surfaces through a thrown/logged error below.
+      logger.debug(
+        `Spotify API ${method} ${url} -> ${response.status}${rawBody ? ` ${rawBody.slice(0, 300)}` : ''}`,
+      );
+    }
     if (!response.ok) {
       if (response.status === 403 && rawBody.includes('PREMIUM_REQUIRED')) {
         throw new Error('A Spotify Premium account is required to control playback.');
       }
-      if (response.status === 403) {
+      if (response.status === 403 && /insufficient client scope/i.test(rawBody)) {
+        throw new Error(
+          'Spotify did not authorize the required access. Click "Connect with Spotify" again in the configuration.',
+        );
+      }
+      if (response.status === 403 && swallowRestriction) {
         // Player restriction (redundant command, unsupported action...): harmless.
         logger.debug(`Spotify API restriction on ${method} ${url}, ignoring: ${rawBody}`);
         return null;
       }
+      if (response.status === 403) {
+        throw new Error(`Spotify refused to start playback: ${rawBody}`);
+      }
       if (response.status === 404) {
-        throw new Error('Spotify device not found or inactive.');
+        throw new Error('The Spotify Connect device is currently unavailable.');
       }
       throw new Error(`Spotify API HTTP ${response.status} on ${method} ${url} - ${rawBody}`);
     }
-    return rawBody ? JSON.parse(rawBody) : null;
+    if (!rawBody) {
+      return null;
+    }
+    try {
+      return JSON.parse(rawBody);
+    } catch {
+      // A successful response (response.ok) whose body isn't valid JSON -
+      // confirmed live on /me/player/queue, which can 200 with an opaque,
+      // non-JSON string instead of Spotify's documented empty 204. The
+      // command still succeeded: crashing the caller over an unparsable body
+      // it likely never reads is worse than handing it back as-is.
+      return rawBody;
+    }
   }
 
   /**
@@ -405,6 +512,165 @@ export class SpotifyClient {
       'PUT',
       `${API.VOLUME}?volume_percent=${Math.round(Number(volumePercent))}&device_id=${deviceId}`,
     );
+  }
+
+  /**
+   * Activate a device without starting or stopping playback on it (PUT
+   * /me/player, `play: false`). A necessary first step before playContext /
+   * playTrackUri when the target device is not already the active one:
+   * Spotify's API applies "activate this device" + "play these uris/this
+   * context" unreliably when combined into a single call - the device
+   * becomes active but nothing actually starts, silently (no error, the
+   * device just sits idle). Splitting the two calls is the documented
+   * workaround and is what every mainstream Spotify client does.
+   * @param {string} deviceId - The Spotify device id to activate.
+   * @returns {Promise<void>} Resolves once the device is the active one.
+   */
+  async transferPlayback(deviceId) {
+    await this.callApi(
+      'PUT',
+      API.PLAYER,
+      { device_ids: [deviceId], play: false },
+      { swallowRestriction: false },
+    );
+  }
+
+  /**
+   * Start playing a context (playlist, album...) on a device, from the start.
+   * @param {string} deviceId - The Spotify device id to play on.
+   * @param {string} contextUri - The Spotify context URI (e.g. `spotify:playlist:...`).
+   * @returns {Promise<void>} Resolves when the command is sent.
+   */
+  async playContext(deviceId, contextUri) {
+    await this.transferPlayback(deviceId);
+    await this.callApi(
+      'PUT',
+      `${API.PLAY}?device_id=${deviceId}`,
+      { context_uri: contextUri, position_ms: 0 },
+      { swallowRestriction: false },
+    );
+  }
+
+  /**
+   * Start playing a single track on a device, from the start.
+   *
+   * NOT implemented as `PUT /me/player/play` with a `uris` array: that call
+   * is accepted (204) but silently does nothing on some clients (confirmed
+   * live - the Spotify desktop app) even after transferPlayback and a settle
+   * delay, with no error and no distinguishing signal anywhere in the
+   * response. Queueing the track then skipping to it is the workaround
+   * several other Spotify integrations use for this exact, long-standing
+   * `uris` unreliability - see skipUntilPlaying for why a single "next" is
+   * not enough on its own, and for why it is NOT awaited here.
+   * @param {string} deviceId - The Spotify device id to play on.
+   * @param {string} trackUri - The Spotify track URI (e.g. `spotify:track:...`).
+   * @returns {Promise<void>} Resolves once the track is durably queued (not
+   *   once it is confirmed playing - see skipUntilPlaying).
+   */
+  async playTrackUri(deviceId, trackUri) {
+    await this.transferPlayback(deviceId);
+    await sleep(TRANSFER_PLAYBACK_SETTLE_MS);
+    await this.callApi(
+      'POST',
+      `${API.QUEUE}?uri=${encodeURIComponent(trackUri)}&device_id=${deviceId}`,
+      undefined,
+      { swallowRestriction: false },
+    );
+    // Not awaited on purpose: Gladys core gives a plain device command a
+    // fixed 5s to ack (COMMAND_TIMEOUT_MS, not overridable for a device
+    // command the way a manifest action can declare its own timeout_seconds)
+    // - skipUntilPlaying's worst case (SKIP_UNTIL_PLAYING_MAX_ATTEMPTS skips)
+    // comfortably exceeds that on its own. The track is already durably
+    // queued at this point; reaching it is a best-effort continuation, not
+    // something the command's caller needs to block on.
+    this.skipUntilPlaying(deviceId, trackUri).catch((e) => {
+      logger.debug(`Spotify: skipUntilPlaying failed for ${trackUri} on ${deviceId}: ${e.message}`);
+    });
+  }
+
+  /**
+   * Skip forward on a device until the given track is the one actually
+   * playing, instead of a single blind "next" (see SKIP_UNTIL_PLAYING_* in
+   * constants.js: the queue endpoint appends to whatever the device already
+   * has queued, so one skip only reaches the intended track when the queue
+   * was empty). Gives up quietly after the attempt ceiling - the track was
+   * still queued, so it will play eventually as the device works through
+   * what was ahead of it; there is nothing more useful to do here than log it.
+   * @param {string} deviceId - The Spotify device id.
+   * @param {string} trackUri - The Spotify track URI to reach.
+   * @returns {Promise<void>} Resolves once reached, or the ceiling is hit.
+   */
+  async skipUntilPlaying(deviceId, trackUri) {
+    for (let attempt = 0; attempt < SKIP_UNTIL_PLAYING_MAX_ATTEMPTS; attempt += 1) {
+      await this.callApi('POST', `${API.NEXT}?device_id=${deviceId}`, undefined, {
+        swallowRestriction: false,
+      });
+      await sleep(SKIP_UNTIL_PLAYING_CHECK_DELAY_MS);
+      const player = await this.getPlayer();
+      if (player && player.item && player.item.uri === trackUri) {
+        return;
+      }
+    }
+    logger.warn(
+      `Spotify: ${trackUri} was not reached on ${deviceId} after ${SKIP_UNTIL_PLAYING_MAX_ATTEMPTS} skip(s) (a leftover queue ahead of it, most likely) - it stays queued.`,
+    );
+  }
+
+  /**
+   * Fetch every playlist the user owns or follows (GET /me/playlists,
+   * paginated), up to the internal MAX_PLAYLISTS ceiling.
+   * @returns {Promise<Array>} The raw Spotify playlist objects.
+   */
+  async fetchAllPlaylists() {
+    const playlists = [];
+    let url = `${API.PLAYLISTS}?limit=${PLAYLISTS_PAGE_SIZE}`;
+    while (url && playlists.length < MAX_PLAYLISTS) {
+      const page = await this.callApi('GET', url);
+      if (!page || !Array.isArray(page.items)) {
+        break;
+      }
+      playlists.push(...page.items);
+      url = page.next;
+    }
+    if (url && playlists.length >= MAX_PLAYLISTS) {
+      logger.info(
+        `Spotify: more than ${MAX_PLAYLISTS} playlists available, truncating to the first ${MAX_PLAYLISTS} (alphabetically-last ones dropped).`,
+      );
+    }
+    return playlists.slice(0, MAX_PLAYLISTS);
+  }
+
+  /**
+   * Fetch the recently played tracks (GET /me/player/recently-played).
+   * @returns {Promise<Array>} The raw Spotify play-history items (up to 50).
+   */
+  async fetchRecentlyPlayed() {
+    const data = await this.callApi('GET', `${API.RECENTLY_PLAYED}?limit=${RECENTLY_PLAYED_LIMIT}`);
+    return data && Array.isArray(data.items) ? data.items : [];
+  }
+
+  /**
+   * Fetch the user's saved ("liked") tracks (GET /me/tracks, paginated), up
+   * to the internal MAX_FAVORITES ceiling.
+   * @returns {Promise<Array>} The raw Spotify saved-track items.
+   */
+  async fetchSavedTracks() {
+    const items = [];
+    let url = `${API.SAVED_TRACKS}?limit=${FAVORITES_PAGE_SIZE}`;
+    while (url && items.length < MAX_FAVORITES) {
+      const page = await this.callApi('GET', url);
+      if (!page || !Array.isArray(page.items)) {
+        break;
+      }
+      items.push(...page.items);
+      url = page.next;
+    }
+    if (url && items.length >= MAX_FAVORITES) {
+      logger.info(
+        `Spotify: more than ${MAX_FAVORITES} saved tracks available, truncating to the first ${MAX_FAVORITES}.`,
+      );
+    }
+    return items.slice(0, MAX_FAVORITES);
   }
 
   /**
