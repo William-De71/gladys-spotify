@@ -63,7 +63,7 @@ Sur la confidentialité, pour être précis : la page est **statique**, rien ne 
 
 Cela fonctionne quelle que soit la manière dont vous accédez à Gladys : en local par son adresse IP, depuis la machine elle-même, ou via Gladys Plus.
 
-Les jetons d'accès sont mémorisés et rafraîchis automatiquement : vous n'avez à vous connecter qu'une seule fois.
+Les jetons d'accès sont mémorisés et rafraîchis automatiquement. Depuis juillet 2026, Spotify limite toutefois chaque autorisation à **6 mois** : passé ce délai, Gladys signale que Spotify a révoqué l'accès, et il suffit de cliquer à nouveau sur « Se connecter avec Spotify » (vos appareils et vos scènes sont conservés). Le rafraîchissement automatique ne prolonge pas ce délai ; seule une nouvelle connexion le remet à zéro.
 
 ### Si le retour automatique échoue
 
@@ -127,7 +127,7 @@ Les boutons des widgets agissent directement sur l'appareil indiqué : ils n'uti
 - **« Spotify OAuth state mismatch »** : l'adresse collée provient d'une demande d'autorisation antérieure. N'ouvrez qu'**un seul** onglet d'autorisation à la fois (chaque clic génère une nouvelle demande, seule la dernière est valable), puis recommencez.
 - **« Cette adresse ne contient pas de code d'autorisation »** : vous avez probablement collé l'adresse après avoir rechargé la page d'erreur, ce qui a perdu les paramètres. Relancez « Se connecter avec Spotify » et copiez l'adresse **sans recharger** la page.
 - **Le code a expiré** (erreur `invalid_grant` au moment de terminer la connexion) : le code n'est valable que quelques minutes et une seule fois. Relancez « Se connecter avec Spotify ».
-- **« Spotify a révoqué l'accès de Gladys »** : l'autorisation n'est plus valable (accès retiré depuis votre compte Spotify, application supprimée, Client Secret régénéré…). L'intégration cesse alors d'interroger Spotify ; cliquez à nouveau sur « Se connecter avec Spotify ».
+- **« Spotify a révoqué l'accès de Gladys »** : l'autorisation n'est plus valable (autorisation arrivée au bout de ses 6 mois, accès retiré depuis votre compte Spotify, application supprimée, Client Secret régénéré…). L'intégration cesse alors d'interroger Spotify ; cliquez à nouveau sur « Se connecter avec Spotify ».
 
 ## Limitations
 

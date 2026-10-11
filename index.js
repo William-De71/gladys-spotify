@@ -52,6 +52,8 @@ async function connectionStatusMessage() {
     return {
       en: 'Spotify is connected, but some permissions are missing. Click "Connect with Spotify" again to grant them.',
       fr: 'Spotify est connecté, mais certaines autorisations sont manquantes. Cliquez à nouveau sur « Se connecter avec Spotify » pour les accorder.',
+      de: 'Spotify ist verbunden, aber einige Berechtigungen fehlen. Klicken Sie erneut auf „Mit Spotify verbinden“, um sie zu erteilen.',
+      es: 'Spotify está conectado, pero faltan algunos permisos. Haga clic de nuevo en «Conectar con Spotify» para concederlos.',
     };
   }
   return undefined;
@@ -71,6 +73,8 @@ async function publishDevicesIfConnected() {
       .setConnectionStatus(false, {
         en: 'Spotify not connected. Click "Connect with Spotify".',
         fr: 'Spotify non connecté. Cliquez sur « Se connecter avec Spotify ».',
+        de: 'Spotify ist nicht verbunden. Klicken Sie auf „Mit Spotify verbinden“.',
+        es: 'Spotify no está conectado. Haga clic en «Conectar con Spotify».',
       })
       .catch(() => {});
     return;
@@ -85,6 +89,8 @@ async function publishDevicesIfConnected() {
       .setConnectionStatus(false, {
         en: `Spotify error: ${e.message}`,
         fr: `Erreur Spotify : ${e.message}`,
+        de: `Spotify-Fehler: ${e.message}`,
+        es: `Error de Spotify: ${e.message}`,
       })
       .catch(() => {});
   }
@@ -205,6 +211,8 @@ gladys.onOAuthCallback(async (key, { code, state, redirectUri }) => {
           ? {
               en: 'Spotify has been reauthorized. Playlists, recently played tracks and favorites are now available.',
               fr: 'Spotify a été réautorisé. Les playlists, morceaux récents et favoris sont maintenant disponibles.',
+              de: 'Spotify wurde erneut autorisiert. Playlists, zuletzt gehörte Titel und Favoriten sind jetzt verfügbar.',
+              es: 'Spotify se ha vuelto a autorizar. Las listas, las canciones recientes y los favoritos ya están disponibles.',
             }
           : undefined,
       )
@@ -218,6 +226,8 @@ gladys.onOAuthCallback(async (key, { code, state, redirectUri }) => {
       .setConnectionStatus(false, {
         en: `Spotify connection failed: ${e.message}`,
         fr: `Échec de la connexion Spotify : ${e.message}`,
+        de: `Spotify-Verbindung fehlgeschlagen: ${e.message}`,
+        es: `Error al conectar con Spotify: ${e.message}`,
       })
       .catch(() => {});
     throw e;
@@ -245,6 +255,8 @@ gladys.onAction('complete_connection', async () => {
   return {
     en: `Connected to Spotify. Your Spotify Connect devices are now available (${playlistCount} playlist(s), ${trackCount} recent track(s), ${favoriteCount} favorite(s)).`,
     fr: `Connecté à Spotify. Vos appareils Spotify Connect sont maintenant disponibles (${playlistCount} playlist(s), ${trackCount} morceau(x) récent(s), ${favoriteCount} favori(s)).`,
+    de: `Mit Spotify verbunden. Ihre Spotify-Connect-Geräte sind jetzt verfügbar (${playlistCount} Playlist(s), ${trackCount} zuletzt gehörte(r) Titel, ${favoriteCount} Favorit(en)).`,
+    es: `Conectado a Spotify. Sus dispositivos Spotify Connect ya están disponibles (${playlistCount} lista(s), ${trackCount} canción(es) reciente(s), ${favoriteCount} favorito(s)).`,
   };
 });
 
@@ -257,6 +269,8 @@ gladys.onAction('refresh_content', async () => {
     return {
       en: 'Spotify not connected. Click "Connect with Spotify" first.',
       fr: "Spotify non connecté. Cliquez d'abord sur « Se connecter avec Spotify ».",
+      de: 'Spotify ist nicht verbunden. Klicken Sie zuerst auf „Mit Spotify verbinden“.',
+      es: 'Spotify no está conectado. Haga clic primero en «Conectar con Spotify».',
     };
   }
   // refreshContentAndRepublish never throws: a failed refresh comes back as
@@ -266,11 +280,15 @@ gladys.onAction('refresh_content', async () => {
     return {
       en: `Content refresh failed: ${error.message}`,
       fr: `Échec de l'actualisation des contenus : ${error.message}`,
+      de: `Aktualisierung der Inhalte fehlgeschlagen: ${error.message}`,
+      es: `Error al actualizar los contenidos: ${error.message}`,
     };
   }
   return {
     en: `Content refreshed: ${playlistCount} playlist(s), ${trackCount} recent track(s), ${favoriteCount} favorite(s).`,
     fr: `Contenus actualisés : ${playlistCount} playlist(s), ${trackCount} morceau(x) récent(s), ${favoriteCount} favori(s).`,
+    de: `Inhalte aktualisiert: ${playlistCount} Playlist(s), ${trackCount} zuletzt gehörte(r) Titel, ${favoriteCount} Favorit(en).`,
+    es: `Contenidos actualizados: ${playlistCount} lista(s), ${trackCount} canción(es) reciente(s), ${favoriteCount} favorito(s).`,
   };
 });
 
@@ -282,17 +300,23 @@ gladys.onAction('test_connection', async () => {
       return {
         en: 'Spotify not connected. Click "Connect with Spotify" first.',
         fr: "Spotify non connecté. Cliquez d'abord sur « Se connecter avec Spotify ».",
+        de: 'Spotify ist nicht verbunden. Klicken Sie zuerst auf „Mit Spotify verbinden“.',
+        es: 'Spotify no está conectado. Haga clic primero en «Conectar con Spotify».',
       };
     }
     const devices = await client.discoverSpotifyDevices();
     return {
       en: `Connection OK: ${devices.length} Spotify Connect device(s) available.`,
       fr: `Connexion OK : ${devices.length} appareil(s) Spotify Connect disponible(s).`,
+      de: `Verbindung OK: ${devices.length} Spotify-Connect-Gerät(e) verfügbar.`,
+      es: `Conexión correcta: ${devices.length} dispositivo(s) Spotify Connect disponible(s).`,
     };
   } catch (e) {
     return {
       en: `Connection failed: ${e.message}`,
       fr: `Échec de la connexion : ${e.message}`,
+      de: `Verbindung fehlgeschlagen: ${e.message}`,
+      es: `Error de conexión: ${e.message}`,
     };
   }
 });
@@ -308,6 +332,8 @@ gladys.onAction('disconnect', async () => {
   return {
     en: 'Disconnected from Spotify. The stored tokens have been removed.',
     fr: 'Déconnecté de Spotify. Les tokens stockés ont été supprimés.',
+    de: 'Von Spotify getrennt. Die gespeicherten Tokens wurden gelöscht.',
+    es: 'Desconectado de Spotify. Se han eliminado los tokens guardados.',
   };
 });
 
@@ -338,6 +364,8 @@ gladys.on('connected', async () => {
       .setConnectionStatus(false, {
         en: 'Initialization failed, check the integration logs.',
         fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
+        de: 'Die Initialisierung ist fehlgeschlagen, prüfen Sie die Logs der Integration.',
+        es: 'La inicialización ha fallado, consulte los registros de la integración.',
       })
       .catch(() => {});
   }

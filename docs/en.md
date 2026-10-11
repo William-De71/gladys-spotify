@@ -63,7 +63,7 @@ On privacy, to be precise: the page is **static**, nothing runs server-side and 
 
 This works whichever way you reach Gladys: locally by its IP address, from the machine itself, or through Gladys Plus.
 
-Access tokens are stored and refreshed automatically: you only need to connect once.
+Access tokens are stored and refreshed automatically. Since July 2026, however, Spotify limits each authorization to **6 months**: after that, Gladys reports that Spotify revoked the access, and you just click "Connect with Spotify" again (your devices and scenes are kept). The automatic refresh does not extend this period; only a new connection resets it.
 
 ### If the automatic return fails
 
@@ -127,7 +127,7 @@ The widget buttons act directly on the device shown: they do not use the pending
 - **"Spotify OAuth state mismatch"**: the address you pasted comes from an earlier authorization request. Keep only **one** authorization tab open at a time (each click generates a new request, only the last one is valid), then start over.
 - **"This URL carries no authorization code"**: you most likely copied the address after reloading the error page, which dropped the query parameters. Click "Connect with Spotify" again and copy the address **without reloading** the page.
 - **The code expired** (`invalid_grant` error when finishing the connection): the code is valid for a few minutes and single-use. Click "Connect with Spotify" again.
-- **"Spotify revoked the access of Gladys"**: the authorization is no longer valid (access removed from your Spotify account, app deleted, Client Secret regenerated…). The integration then stops calling Spotify; click "Connect with Spotify" again.
+- **"Spotify revoked the access of Gladys"**: the authorization is no longer valid (authorization past its 6-month lifetime, access removed from your Spotify account, app deleted, Client Secret regenerated…). The integration then stops calling Spotify; click "Connect with Spotify" again.
 
 ## Limitations
 

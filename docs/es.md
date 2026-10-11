@@ -1,0 +1,140 @@
+# Integración de Spotify
+
+Esta integración le permite controlar sus dispositivos **Spotify Connect** desde Gladys Assistant: reproducir, pausar, canción anterior / siguiente, volumen, e iniciar una de sus listas, una canción escuchada recientemente o uno de sus favoritos.
+
+## Funciones
+
+- **Dispositivos Spotify Connect**: cada altavoz, teléfono u ordenador conectado a su cuenta de Spotify aparece como un dispositivo de Gladys.
+- **Control de la reproducción**: reproducir, pausar, anterior, siguiente.
+- **Volumen**: ajuste del volumen del dispositivo activo.
+- **Estado de reproducción**: Gladys refleja en tiempo real si un dispositivo está reproduciendo o en pausa.
+- **Dispositivo «Spotify»**: un dispositivo aparte y único contiene tres listas — listas de reproducción, canciones recientes y favoritos. Elegir una opción ahí no reproduce nada: solo se guarda como selección pendiente, y el botón de reproducción de cualquier dispositivo Spotify Connect la inicia en cuanto se pulsa.
+- **Widgets del panel**: reproducción en curso con portada y controles, inicio rápido de sus listas/álbumes favoritos, canciones escuchadas recientemente.
+- **Acciones**: probar la conexión, finalizar una conexión manualmente, actualizar las listas/canciones recientes/favoritos y desconectar, directamente desde la pantalla de configuración. Para volver a autorizar, basta con hacer clic de nuevo en «Conectar con Spotify».
+
+## Requisitos
+
+- Una **cuenta Spotify Premium** (obligatoria: la API de Spotify no permite controlar la reproducción con una cuenta gratuita).
+- Una **aplicación de Spotify** creada en el panel de desarrollador (gratuita), para obtener un Client ID y un Client Secret.
+- Gladys Assistant 5.1.0 o posterior (widgets del panel).
+
+## Crear su aplicación de Spotify
+
+1. Vaya al [panel de desarrollador de Spotify](https://developer.spotify.com/dashboard) e inicie sesión.
+2. Haga clic en **Create app**.
+3. Indique un nombre y una descripción (por ejemplo «Gladys»).
+4. En **Redirect URIs**, introduzca `https://my.gladysassistant.com/redirect/oauth` (vea «La dirección de redirección» más abajo) y haga clic en **Add**.
+5. Marque la **Web API** y guarde (**Save**).
+6. Abra los **Settings** de la aplicación: copie el **Client ID**, y muestre y copie el **Client Secret**.
+
+## La dirección de redirección (Redirect URI)
+
+Spotify **solo** le devuelve a Gladys si la dirección de redirección está declarada de antemano en su aplicación, y debe ser **idéntica carácter por carácter** a la que usa Gladys.
+
+Desde abril de 2025, Spotify exige además que esta dirección sea **HTTPS** (o la dirección de bucle local `127.0.0.1`). Una dirección como `http://192.168.1.50:1444/...` se rechaza por tanto siempre — lo que afecta a la mayoría de las instalaciones autoalojadas.
+
+Gladys resuelve este problema con una **página de redirección HTTPS** común a todas las instancias. La dirección que hay que declarar en Spotify es por tanto **fija e igual para todos**:
+
+```
+https://my.gladysassistant.com/redirect/oauth
+```
+
+Cópiela tal cual en el campo **Redirect URIs** de su aplicación de Spotify, y luego **Add** y **Save**. La pantalla de configuración de la integración también la muestra, con un botón para copiarla.
+
+> ℹ️ Esta dirección no depende ni de su puerto, ni de su dirección IP, ni del `selector` de la integración: el mismo valor sirve tanto si accede a Gladys en local como a través de Gladys Plus. Ya no tiene que actualizarla si su instalación cambia.
+
+### Cómo funciona
+
+Tras su autorización, Spotify devuelve su navegador a esa página HTTPS. La página lee la dirección de su Gladys — transportada en el parámetro `state`, el único que un proveedor OAuth devuelve intacto — y le redirige a su instancia, sea cual sea, incluso en HTTP en su red local.
+
+Es el mismo enfoque que `my.home-assistant.io` en Home Assistant.
+
+Sobre la privacidad, para ser precisos: la página es **estática**, no se ejecuta nada en el servidor y no se guarda nada. El código de autorización aparece, sin embargo, en la dirección solicitada a un dominio gestionado por Gladys; ese código por sí solo no sirve de nada, porque canjearlo por tokens exige su Client Secret, que nunca sale de su instalación. Los tokens no pasan ni por la página de redirección ni por la interfaz de Gladys.
+
+> ℹ️ Si ya accede a Gladys en HTTPS, la pantalla de configuración ofrece una opción avanzada para usar la dirección de su propia instancia en lugar de la página de redirección. En ese caso, es esa dirección la que hay que declarar en Spotify.
+
+## Conexión
+
+1. Abra en Gladys la pantalla de configuración de la integración de Spotify.
+2. Pegue su **Client ID** y su **Client Secret** y guarde.
+3. Haga clic en **«Conectar con Spotify»**: se le redirige a Spotify para autorizar a Gladys.
+4. Tras validar, pasa por la página de redirección, que le devuelve automáticamente a su Gladys.
+5. La conexión queda establecida y sus dispositivos Spotify Connect quedan disponibles para la búsqueda.
+
+Funciona sea cual sea la forma en que accede a Gladys: en local por su dirección IP, desde el propio equipo o a través de Gladys Plus.
+
+Los tokens de acceso se guardan y se renuevan automáticamente. Sin embargo, desde julio de 2026 Spotify limita cada autorización a **6 meses**: pasado ese plazo, Gladys indica que Spotify ha revocado el acceso, y basta con hacer clic de nuevo en «Conectar con Spotify» (sus dispositivos y escenas se conservan). La renovación automática no prolonga ese plazo; solo una nueva conexión lo reinicia.
+
+### Si la vuelta automática falla
+
+Esto ya no debería ocurrir, pero la integración mantiene un método de respaldo — por ejemplo si la página de redirección no está accesible, o con una versión de Gladys anterior a la que la introdujo.
+
+Si, al volver de Spotify, su navegador muestra una **página de error** («no se puede acceder a este sitio», «conexión rechazada»…) en lugar de volver a Gladys: **la autorización se ha concedido igualmente**, y el código de conexión está en la dirección mostrada.
+
+1. En la barra de direcciones de la página de error, **seleccione y copie la dirección completa**. Tiene este aspecto:
+
+   ```
+   http://192.168.1.50:1444/dashboard/integration/device/external/ext-spotify/oauth-callback?code=AQD...&state=8f2c...
+   ```
+
+2. Vuelva a Gladys, a la pantalla de configuración de la integración de Spotify.
+3. Pegue esa dirección en el campo **Dirección de retorno** (sección «¿El navegador no pudo volver a Gladys?») y **guarde**.
+4. Haga clic en el botón **«Finalizar la conexión»**.
+5. Aparece el mensaje de confirmación: la conexión queda establecida y sus dispositivos quedan disponibles para la búsqueda. El campo se vacía solo, ya que el código es de un solo uso.
+
+> ⚠️ El código de esa dirección es **de un solo uso** y caduca a los pocos minutos. Si la operación falla, haga clic de nuevo en «Conectar con Spotify» y vuelva a empezar con la nueva dirección.
+
+## Búsqueda de dispositivos
+
+La API de Spotify solo devuelve los dispositivos **conectados en ese momento** (aplicación de Spotify abierta, altavoz encendido y conectado). Si un dispositivo no aparece, abra Spotify en él y vuelva a lanzar una búsqueda.
+
+## El dispositivo «Spotify»: listas, canciones recientes y favoritos
+
+Además de sus dispositivos Spotify Connect, la integración crea un dispositivo aparte y único llamado **«Spotify»**. Contiene tres listas independientes:
+
+- **Listas de reproducción**: sus listas (propias, seguidas, privadas y colaborativas), por orden alfabético (`Playlist — <nombre>`).
+- **Canciones recientes**: sus canciones escuchadas recientemente, de la más reciente a la más antigua (`Récent — <artista> — <canción>`).
+- **Favoritos**: sus canciones marcadas como «Me gusta», en el mismo formato (`Favori — <artista> — <canción>`).
+
+Los prefijos `Playlist`, `Récent` y `Favori` de las opciones son fijos y no se traducen.
+
+**Elegir una opción en una de estas listas no reproduce nada.** Solo se guarda como _selección pendiente_, y las otras dos listas vuelven automáticamente a «no seleccionado» — las tres son mutuamente excluyentes, solo hay una selección activa a la vez. Es el botón de **reproducción** de un dispositivo Spotify Connect el que la activa: si hay una selección pendiente, la inicia en ese dispositivo en lugar de simplemente reanudar. Funciona con cualquiera de sus dispositivos Spotify Connect (Mac, teléfono, altavoz…), sin necesidad de crear una escena.
+
+Como el valor de cada opción es una URI de Spotify estándar sin envoltorio adicional (p. ej. `spotify:playlist:...`, `spotify:track:...`), también está disponible tal cual en el estado de la propia lista, y una escena puede leerla y transmitirla a otra integración (p. ej. una función local «Reproducir URI» de un altavoz Sonos). Si el elemento seleccionado se elimina después o deja de estar accesible, el intento de reproducción falla con un mensaje de error claro en lugar de reproducir otra cosa.
+
+Las tres listas se actualizan automáticamente tras una conexión, tras una nueva autorización, al buscar dispositivos, al iniciar la integración y cada 20 minutos en segundo plano — nunca en cada visualización del panel ni en cada ejecución de una escena. Use la acción **«Actualizar los contenidos de Spotify»** de la pantalla de configuración para actualizarlas cuando quiera; indica cuántas listas, canciones recientes y favoritos ha encontrado.
+
+El endpoint de Spotify de escuchas recientes no devuelve los podcasts, y esta integración no puede volver a lanzar los archivos locales: por eso ninguno de los dos aparece en estas listas.
+
+### Permisos que faltan tras una actualización
+
+Las listas de reproducción / canciones recientes / favoritos necesitan permisos que una conexión más antigua puede no haber concedido — en particular los favoritos, añadidos más tarde y que requieren un permiso adicional (`user-library-read`). Si Gladys indica que faltan permisos, o si una lista sigue vacía en una conexión existente, haga clic de nuevo en **«Conectar con Spotify»** en la pantalla de configuración: Spotify vuelve a mostrar la pantalla de autorización con los nuevos permisos solicitados (los ya concedidos se aceptan con un clic), sin tocar sus dispositivos, sus escenas ni los controles de reproducción que ya usa.
+
+## Widgets del panel
+
+La integración ofrece tres widgets, que se añaden desde la edición del panel (bloque «Integraciones»). Siguen automáticamente el tema claro/oscuro y el idioma de Gladys.
+
+- **Spotify – Sonando ahora**: lo que su cuenta está reproduciendo ahora mismo, en cualquier dispositivo — portada, título, artista y álbum (o podcast), dispositivo, volumen, modo aleatorio y repetición — con los botones **Anterior**, **Reproducir/Pausa**, **Siguiente** y **Abrir Spotify**. El widget se actualiza solo en cada cambio (canción, pausa, volumen, cambio de dispositivo). Ajuste opcional: un **dispositivo Spotify Connect**, propuesto para reanudar la reproducción cuando no suena nada (solo si está conectado).
+- **Spotify – Inicio rápido**: hasta 4 listas, álbumes, artistas o canciones, mostrados con su portada, cada uno con su botón de reproducción. En los ajustes del widget, pegue para cada posición un **enlace de Spotify** (en Spotify: **Compartir › Copiar enlace**, p. ej. `https://open.spotify.com/playlist/...`) o una URI (`spotify:album:...`). Elija también el **dispositivo** en el que reproducir; si lo deja vacío, se usa el dispositivo activo en ese momento.
+- **Spotify – Recientes**: las últimas canciones escuchadas en su cuenta (de 1 a 8, 5 por defecto), con portada, hora de escucha y enlace a Spotify; la canción en curso aparece marcada.
+
+Los botones de los widgets actúan directamente sobre el dispositivo indicado: no usan la selección pendiente del dispositivo «Spotify». Como en el resto de la integración, se necesita una cuenta **Premium** para los comandos de reproducción.
+
+> ℹ️ Algunas listas editoriales de Spotify («Today's Top Hits», Daily Mix…) ya no son legibles para las aplicaciones de terceros: su nombre y su portada pueden faltar en el inicio rápido (el widget muestra «Lista 1»…), y Spotify puede rechazar su reproducción.
+
+## Solución de problemas
+
+- **Spotify muestra «redirect_uri: Not matching configuration»** (o no muestra la pantalla de autorización): la dirección declarada en su aplicación de Spotify no coincide exactamente con la que usa Gladys. Compruebe que el campo **Redirect URIs** contiene `https://my.gladysassistant.com/redirect/oauth`, sin barra final, y que ha hecho clic en **Add** y luego en **Save**. Si ha activado la opción «dirección de la instancia», es esa dirección la que hay que declarar.
+- **«Conexión rechazada» o «sitio inaccesible»** al volver de Spotify: la vuelta automática no se ha completado. Copie la dirección de la página de error y use la acción **«Finalizar la conexión»** (vea «Si la vuelta automática falla»).
+- **«Spotify OAuth state mismatch»**: la dirección pegada procede de una solicitud de autorización anterior. Mantenga abierta **una sola** pestaña de autorización a la vez (cada clic genera una nueva solicitud, solo la última es válida) y vuelva a empezar.
+- **«This URL carries no authorization code»**: probablemente ha copiado la dirección después de recargar la página de error, lo que ha hecho perder los parámetros. Haga clic de nuevo en «Conectar con Spotify» y copie la dirección **sin recargar** la página.
+- **El código ha caducado** (error `invalid_grant` al finalizar la conexión): el código solo es válido unos minutos y una sola vez. Haga clic de nuevo en «Conectar con Spotify».
+- **«Spotify ha revocado el acceso de Gladys»**: la autorización ya no es válida (autorización caducada tras sus 6 meses, acceso retirado desde su cuenta de Spotify, aplicación eliminada, Client Secret regenerado…). La integración deja entonces de consultar a Spotify; haga clic de nuevo en «Conectar con Spotify».
+
+## Limitaciones
+
+- Una cuenta **Premium** es imprescindible para cualquier comando de reproducción. Sin ella, Spotify devuelve un error `PREMIUM_REQUIRED`.
+- Solo se listan los dispositivos **conectados** en el momento de la búsqueda.
+- Se listan hasta 200 listas, las 50 últimas canciones escuchadas y 200 favoritos (límites propios de Spotify o fijados por la integración); por encima, los elementos sobrantes se eliminan (por orden alfabético para las listas) y se registra en los logs, nunca en silencio.
+- Los podcasts y los archivos guardados localmente nunca aparecen en las listas del dispositivo «Spotify».
+- La selección pendiente solo vive en memoria. Si la integración se reinicia entre la elección de una opción y la pulsación de Reproducir, el selector sigue mostrando la elección en el panel, pero Reproducir solo reanuda en lugar de iniciarla — vuelva a seleccionarla si ocurre.

@@ -62,9 +62,10 @@ const componentTypes = (content) => content.components.map((component) => compon
 test('t translates with an English fallback and fills placeholders', () => {
   assert.equal(t('resumeOn', 'fr', { device: 'Salon' }), 'Lire sur Salon');
   assert.equal(t('resumeOn', 'fr-FR', { device: 'Salon' }), 'Lire sur Salon');
-  assert.equal(t('resumeOn', 'de', { device: 'Salon' }), 'Play on Salon');
+  assert.equal(t('resumeOn', 'de', { device: 'Salon' }), 'Auf Salon abspielen');
+  assert.equal(t('resumeOn', 'it', { device: 'Salon' }), 'Play on Salon');
   assert.equal(t('resumeOn', undefined, {}), 'Play on {device}');
-  assert.deepEqual(Object.keys(allLanguages('noDevice')).sort(), ['en', 'fr']);
+  assert.deepEqual(Object.keys(allLanguages('noDevice')).sort(), ['de', 'en', 'es', 'fr']);
 });
 
 test('clip and readCount bound their input', () => {

@@ -1,0 +1,140 @@
+# Spotify-Integration
+
+Mit dieser Integration steuern Sie Ihre **Spotify-Connect**-Geräte aus Gladys Assistant: Wiedergabe, Pause, vorheriger / nächster Titel, Lautstärke, und Sie starten eine Ihrer Playlists, einen zuletzt gehörten Titel oder einen Ihrer Favoriten.
+
+## Funktionen
+
+- **Spotify-Connect-Geräte**: Jeder Lautsprecher, jedes Telefon und jeder Computer, der mit Ihrem Spotify-Konto verbunden ist, erscheint als Gladys-Gerät.
+- **Wiedergabesteuerung**: Abspielen, Pause, Zurück, Weiter.
+- **Lautstärke**: Einstellen der Lautstärke des aktiven Geräts.
+- **Wiedergabestatus**: Gladys zeigt in Echtzeit an, ob ein Gerät abspielt oder pausiert ist.
+- **Gerät „Spotify“**: Ein separates, einzelnes Gerät enthält drei Listen — Playlists, zuletzt gehörte Titel, Favoriten. Die Auswahl einer Option startet dort nichts: Sie wird nur als ausstehende Auswahl gemerkt, und die Wiedergabetaste eines beliebigen Spotify-Connect-Geräts startet sie, sobald sie gedrückt wird.
+- **Dashboard-Widgets**: aktuelle Wiedergabe mit Cover und Bedienelementen, Schnellstart Ihrer Lieblings-Playlists/-Alben, zuletzt gehörte Titel.
+- **Aktionen**: Verbindung testen, eine Verbindung manuell abschließen, Playlists/zuletzt gehörte Titel/Favoriten aktualisieren und trennen, direkt im Konfigurationsbildschirm. Für eine erneute Autorisierung klicken Sie einfach noch einmal auf „Mit Spotify verbinden“.
+
+## Voraussetzungen
+
+- Ein **Spotify-Premium-Konto** (erforderlich: Die Spotify-API erlaubt keine Steuerung der Wiedergabe mit einem kostenlosen Konto).
+- Eine im Entwickler-Dashboard erstellte **Spotify-Anwendung** (kostenlos), um eine Client ID und ein Client Secret zu erhalten.
+- Gladys Assistant 5.1.0 oder neuer (Dashboard-Widgets).
+
+## Ihre Spotify-Anwendung erstellen
+
+1. Öffnen Sie das [Spotify-Entwickler-Dashboard](https://developer.spotify.com/dashboard) und melden Sie sich an.
+2. Klicken Sie auf **Create app**.
+3. Geben Sie einen Namen und eine Beschreibung ein (zum Beispiel „Gladys“).
+4. Tragen Sie unter **Redirect URIs** `https://my.gladysassistant.com/redirect/oauth` ein (siehe „Die Weiterleitungsadresse“ weiter unten) und klicken Sie auf **Add**.
+5. Wählen Sie die **Web API** aus und speichern Sie (**Save**).
+6. Öffnen Sie die **Settings** der Anwendung: Kopieren Sie die **Client ID**, lassen Sie das **Client Secret** anzeigen und kopieren Sie es.
+
+## Die Weiterleitungsadresse (Redirect URI)
+
+Spotify leitet Sie **nur dann** zu Gladys zurück, wenn die Weiterleitungsadresse vorab in Ihrer Anwendung eingetragen ist, und sie muss **Zeichen für Zeichen identisch** mit der von Gladys verwendeten sein.
+
+Seit April 2025 verlangt Spotify außerdem, dass diese Adresse **HTTPS** verwendet (oder die Loopback-Adresse `127.0.0.1`). Eine Adresse wie `http://192.168.1.50:1444/...` wird daher immer abgelehnt — das betrifft die meisten selbst gehosteten Installationen.
+
+Gladys löst dieses Problem mit einer **HTTPS-Weiterleitungsseite**, die alle Instanzen gemeinsam nutzen. Die in Spotify einzutragende Adresse ist daher **fest und für alle gleich**:
+
+```
+https://my.gladysassistant.com/redirect/oauth
+```
+
+Kopieren Sie sie unverändert in das Feld **Redirect URIs** Ihrer Spotify-Anwendung, dann **Add** und **Save**. Der Konfigurationsbildschirm der Integration zeigt sie ebenfalls an, mit einer Schaltfläche zum Kopieren.
+
+> ℹ️ Diese Adresse hängt weder von Ihrem Port noch von Ihrer IP-Adresse noch vom `selector` der Integration ab: Derselbe Wert funktioniert, egal ob Sie Gladys lokal oder über Gladys Plus erreichen. Sie müssen sie nicht mehr anpassen, wenn sich Ihre Installation ändert.
+
+### So funktioniert es
+
+Nach Ihrer Autorisierung schickt Spotify Ihren Browser zu dieser HTTPS-Seite zurück. Die Seite liest die Adresse Ihrer Gladys-Instanz — übertragen im Parameter `state`, dem einzigen, den ein OAuth-Anbieter unverändert zurückgibt — und leitet Sie zu Ihrer Instanz weiter, egal welche es ist, auch per einfachem HTTP in Ihrem lokalen Netzwerk.
+
+Das ist derselbe Ansatz wie `my.home-assistant.io` bei Home Assistant.
+
+Zum Datenschutz, um genau zu sein: Die Seite ist **statisch**, auf dem Server läuft nichts und nichts wird gespeichert. Der Autorisierungscode erscheint jedoch in der Adresse, die auf einer von Gladys betriebenen Domain aufgerufen wird; dieser Code allein ist nutzlos, denn der Tausch gegen Tokens erfordert Ihr Client Secret, das Ihre Installation nie verlässt. Die Tokens selbst laufen weder über die Weiterleitungsseite noch über die Gladys-Oberfläche.
+
+> ℹ️ Wenn Sie Gladys bereits über HTTPS erreichen, bietet der Konfigurationsbildschirm eine erweiterte Option, um statt der Weiterleitungsseite die Adresse Ihrer eigenen Instanz zu verwenden. Dann muss diese Adresse in Spotify eingetragen werden.
+
+## Verbindung
+
+1. Öffnen Sie in Gladys den Konfigurationsbildschirm der Spotify-Integration.
+2. Fügen Sie Ihre **Client ID** und Ihr **Client Secret** ein und speichern Sie.
+3. Klicken Sie auf **„Mit Spotify verbinden“**: Sie werden zu Spotify weitergeleitet, um Gladys zu autorisieren.
+4. Nach der Bestätigung gelangen Sie über die Weiterleitungsseite automatisch zurück zu Ihrer Gladys-Instanz.
+5. Die Verbindung ist hergestellt und Ihre Spotify-Connect-Geräte stehen für die Suche zur Verfügung.
+
+Das funktioniert unabhängig davon, wie Sie Gladys erreichen: lokal über die IP-Adresse, direkt auf dem Rechner selbst oder über Gladys Plus.
+
+Die Zugriffstokens werden gespeichert und automatisch erneuert. Seit Juli 2026 begrenzt Spotify jedoch jede Autorisierung auf **6 Monate**: Danach meldet Gladys, dass Spotify den Zugriff widerrufen hat, und Sie klicken einfach erneut auf „Mit Spotify verbinden“ (Ihre Geräte und Szenen bleiben erhalten). Die automatische Erneuerung verlängert diese Frist nicht; nur eine neue Verbindung setzt sie zurück.
+
+### Wenn die automatische Rückkehr fehlschlägt
+
+Das sollte nicht mehr vorkommen, aber die Integration behält eine Ausweichmethode — etwa wenn die Weiterleitungsseite nicht erreichbar ist oder bei einer Gladys-Version, die älter ist als die, mit der sie eingeführt wurde.
+
+Zeigt Ihr Browser bei der Rückkehr von Spotify eine **Fehlerseite** („Diese Website ist nicht erreichbar“, „Verbindung abgelehnt“…) an, statt zu Gladys zurückzukehren: **Die Autorisierung wurde trotzdem erteilt**, und der Verbindungscode steht in der angezeigten Adresse.
+
+1. **Markieren und kopieren Sie die vollständige Adresse** in der Adressleiste der Fehlerseite. Sie sieht so aus:
+
+   ```
+   http://192.168.1.50:1444/dashboard/integration/device/external/ext-spotify/oauth-callback?code=AQD...&state=8f2c...
+   ```
+
+2. Kehren Sie in Gladys zum Konfigurationsbildschirm der Spotify-Integration zurück.
+3. Fügen Sie diese Adresse in das Feld **Rückgabeadresse** ein (Abschnitt „Browser konnte nicht zu Gladys zurückkehren?“) und **speichern** Sie.
+4. Klicken Sie auf die Schaltfläche **„Verbindung abschließen“**.
+5. Die Bestätigung erscheint: Die Verbindung ist hergestellt und Ihre Geräte stehen für die Suche zur Verfügung. Das Feld leert sich automatisch, da der Code nur einmal verwendbar ist.
+
+> ⚠️ Der Code in dieser Adresse ist **nur einmal verwendbar** und läuft nach wenigen Minuten ab. Schlägt der Vorgang fehl, klicken Sie einfach erneut auf „Mit Spotify verbinden“ und versuchen Sie es mit der neuen Adresse.
+
+## Gerätesuche
+
+Die Spotify-API liefert nur Geräte, die **gerade online** sind (Spotify-App geöffnet, Lautsprecher eingeschaltet und verbunden). Erscheint ein Gerät nicht, öffnen Sie Spotify darauf und starten Sie die Suche erneut.
+
+## Das Gerät „Spotify“: Playlists, zuletzt gehörte Titel und Favoriten
+
+Zusätzlich zu Ihren Spotify-Connect-Geräten erstellt die Integration ein separates, einzelnes Gerät namens **„Spotify“**. Es enthält drei unabhängige Listen:
+
+- **Playlists**: Ihre Playlists (eigene, gefolgte, private und gemeinsame), alphabetisch sortiert (`Playlist — <Name>`).
+- **Zuletzt gehörte Titel**: Ihre kürzlich gehörten Titel, die neuesten zuerst (`Récent — <Künstler> — <Titel>`).
+- **Favoriten**: Ihre mit „Gefällt mir“ markierten Titel, im selben Format (`Favori — <Künstler> — <Titel>`).
+
+Die Präfixe `Récent` und `Favori` der Optionen sind fest und werden nicht übersetzt.
+
+**Die Auswahl einer Option in einer dieser Listen startet nichts.** Sie wird nur als _ausstehende Auswahl_ gemerkt, und die beiden anderen Listen werden automatisch auf „nicht ausgewählt“ zurückgesetzt — die drei schließen sich gegenseitig aus, es gibt immer nur eine aktive Auswahl. Erst die **Wiedergabetaste** eines Spotify-Connect-Geräts löst sie aus: Gibt es eine ausstehende Auswahl, startet sie diese auf dem Gerät statt einer einfachen Fortsetzung. Das funktioniert mit jedem Ihrer Spotify-Connect-Geräte (Mac, Telefon, Lautsprecher…), ohne dass eine Szene nötig ist.
+
+Da der Wert jeder Option eine einfache Spotify-URI ohne zusätzliche Verpackung ist (z. B. `spotify:playlist:...`, `spotify:track:...`), steht er auch unverändert im Status der Liste selbst zur Verfügung und kann so von einer Szene gelesen und an eine andere Integration weitergegeben werden (z. B. eine lokale „URI abspielen“-Funktion eines Sonos-Lautsprechers). Wird das ausgewählte Element später gelöscht oder ist es nicht mehr zugänglich, schlägt der Wiedergabeversuch mit einer klaren Fehlermeldung fehl, statt etwas anderes abzuspielen.
+
+Die drei Listen werden automatisch aktualisiert: nach einer Verbindung, nach einer erneuten Autorisierung, bei einer Gerätesuche, beim Start der Integration und alle 20 Minuten im Hintergrund — nie bei jeder Anzeige des Dashboards oder Ausführung einer Szene. Mit der Aktion **„Spotify-Inhalte aktualisieren“** im Konfigurationsbildschirm aktualisieren Sie sie bei Bedarf; sie meldet, wie viele Playlists, zuletzt gehörte Titel und Favoriten gefunden wurden.
+
+Podcasts werden vom Spotify-Endpunkt für zuletzt gehörte Titel nicht zurückgegeben, und lokale Dateien können von dieser Integration nicht erneut gestartet werden: Beide erscheinen daher nicht in diesen Listen.
+
+### Fehlende Berechtigungen nach einem Update
+
+Die Listen Playlists / zuletzt gehörte Titel / Favoriten benötigen Berechtigungen, die eine ältere Verbindung möglicherweise noch nicht erteilt hat — insbesondere die Favoriten, die später hinzugekommen sind und eine zusätzliche Berechtigung (`user-library-read`) erfordern. Meldet Gladys fehlende Berechtigungen oder bleibt eine Liste bei einer bestehenden Verbindung leer, klicken Sie im Konfigurationsbildschirm erneut auf **„Mit Spotify verbinden“**: Spotify zeigt den Autorisierungsbildschirm mit den neu angeforderten Berechtigungen erneut an (bereits erteilte werden mit einem Klick bestätigt), ohne Ihre Geräte, Szenen oder bereits genutzten Wiedergabesteuerungen anzutasten.
+
+## Dashboard-Widgets
+
+Die Integration bietet drei Widgets, die Sie im Dashboard-Editor hinzufügen (Block „Integrationen“). Sie folgen automatisch dem hellen/dunklen Design und der Sprache von Gladys.
+
+- **Spotify – Aktuelle Wiedergabe**: was Ihr Konto gerade abspielt, auf welchem Gerät auch immer — Cover, Titel, Künstler und Album (oder Podcast), Gerät, Lautstärke, Zufallswiedergabe und Wiederholung — mit den Tasten **Zurück**, **Abspielen/Pause**, **Weiter** und **Spotify öffnen**. Das Widget aktualisiert sich bei jeder Änderung von selbst (Titel, Pause, Lautstärke, Gerätewechsel). Optionale Einstellung: ein **Spotify-Connect-Gerät**, das zum Fortsetzen der Wiedergabe angeboten wird, wenn nichts läuft (nur solange es online ist).
+- **Spotify – Schnellstart**: bis zu 4 Playlists, Alben, Künstler oder Titel, mit ihrem Cover angezeigt, jeweils mit eigener Wiedergabetaste. Fügen Sie in den Widget-Einstellungen für jeden Platz einen **Spotify-Link** ein (in Spotify: **Teilen › Link kopieren**, z. B. `https://open.spotify.com/playlist/...`) oder eine URI (`spotify:album:...`). Wählen Sie außerdem das **Gerät**, auf dem abgespielt werden soll; bleibt es leer, wird das in dem Moment aktive Gerät verwendet.
+- **Spotify – Zuletzt gehört**: die zuletzt auf Ihrem Konto gehörten Titel (1 bis 8, standardmäßig 5), mit Cover, Uhrzeit und Link zu Spotify; der aktuell laufende Titel ist markiert.
+
+Die Tasten der Widgets wirken direkt auf das angezeigte Gerät: Sie verwenden nicht die ausstehende Auswahl des Geräts „Spotify“. Wie für den Rest der Integration ist für Wiedergabebefehle ein **Premium**-Konto erforderlich.
+
+> ℹ️ Einige redaktionelle Spotify-Playlists („Today's Top Hits“, Daily Mix…) sind für Drittanwendungen nicht mehr lesbar: Name und Cover können dann im Schnellstart fehlen (das Widget zeigt „Playlist 1“…), und Spotify kann ihre Wiedergabe ablehnen.
+
+## Fehlerbehebung
+
+- **Spotify zeigt „redirect_uri: Not matching configuration“** (oder zeigt den Autorisierungsbildschirm nicht an): Die in Ihrer Spotify-Anwendung eingetragene Adresse stimmt nicht genau mit der von Gladys verwendeten überein. Prüfen Sie, ob das Feld **Redirect URIs** `https://my.gladysassistant.com/redirect/oauth` enthält, ohne abschließenden Schrägstrich, und ob Sie auf **Add** und dann **Save** geklickt haben. Wenn Sie die Option „Adresse der Instanz“ aktiviert haben, muss stattdessen diese Adresse eingetragen werden.
+- **„Verbindung abgelehnt“ oder „Website nicht erreichbar“** bei der Rückkehr von Spotify: Die automatische Rückkehr ist nicht gelungen. Kopieren Sie die Adresse der Fehlerseite und verwenden Sie die Aktion **„Verbindung abschließen“** (siehe „Wenn die automatische Rückkehr fehlschlägt“).
+- **„Spotify OAuth state mismatch“**: Die eingefügte Adresse stammt aus einer früheren Autorisierungsanfrage. Lassen Sie immer nur **einen** Autorisierungs-Tab offen (jeder Klick erzeugt eine neue Anfrage, nur die letzte ist gültig) und beginnen Sie erneut.
+- **„This URL carries no authorization code“**: Sie haben die Adresse wahrscheinlich kopiert, nachdem Sie die Fehlerseite neu geladen haben, wodurch die Parameter verloren gingen. Klicken Sie erneut auf „Mit Spotify verbinden“ und kopieren Sie die Adresse, **ohne die Seite neu zu laden**.
+- **Der Code ist abgelaufen** (Fehler `invalid_grant` beim Abschließen der Verbindung): Der Code ist nur wenige Minuten und nur einmal gültig. Klicken Sie erneut auf „Mit Spotify verbinden“.
+- **„Spotify hat den Zugriff von Gladys widerrufen“**: Die Autorisierung ist nicht mehr gültig (Autorisierung nach 6 Monaten abgelaufen, Zugriff in Ihrem Spotify-Konto entzogen, Anwendung gelöscht, Client Secret neu erzeugt…). Die Integration fragt Spotify dann nicht mehr ab; klicken Sie erneut auf „Mit Spotify verbinden“.
+
+## Einschränkungen
+
+- Für jeden Wiedergabebefehl ist ein **Premium**-Konto unerlässlich. Ohne es gibt Spotify den Fehler `PREMIUM_REQUIRED` zurück.
+- Nur Geräte, die zum Zeitpunkt der Suche **online** sind, werden aufgelistet.
+- Bis zu 200 Playlists, die letzten 50 gehörten Titel und 200 Favoriten werden aufgelistet (Grenzen von Spotify oder der Integration); darüber hinaus werden die überzähligen entfernt (bei Playlists alphabetisch) und dies wird protokolliert, nie stillschweigend.
+- Podcasts und lokal gespeicherte Dateien erscheinen nie in den Listen des Geräts „Spotify“.
+- Die ausstehende Auswahl existiert nur im Arbeitsspeicher. Startet die Integration zwischen der Auswahl einer Option und dem Drücken auf Abspielen neu, zeigt das Auswahlfeld die Wahl im Dashboard weiterhin an, aber Abspielen setzt nur die Wiedergabe fort, statt sie zu starten — wählen Sie sie in diesem Fall erneut aus.

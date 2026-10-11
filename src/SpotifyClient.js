@@ -356,6 +356,8 @@ export class SpotifyClient {
             .setConnectionStatus(false, {
               en: 'Spotify revoked the access of Gladys. Click "Connect with Spotify" again.',
               fr: "Spotify a révoqué l'accès de Gladys. Cliquez à nouveau sur « Se connecter avec Spotify ».",
+              de: 'Spotify hat den Zugriff von Gladys widerrufen. Klicken Sie erneut auf „Mit Spotify verbinden“.',
+              es: 'Spotify ha revocado el acceso de Gladys. Haga clic de nuevo en «Conectar con Spotify».',
             })
             .catch(() => {});
         }

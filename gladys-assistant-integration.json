@@ -4,7 +4,9 @@
   "name": "Spotify",
   "description": {
     "en": "Control your Spotify Connect devices, launch playlists and follow playback on the dashboard.",
-    "fr": "Pilotez vos appareils Spotify Connect, lancez vos playlists et suivez la lecture en direct."
+    "fr": "Pilotez vos appareils Spotify Connect, lancez vos playlists et suivez la lecture en direct.",
+    "de": "Spotify-Connect-Geräte steuern, Playlists starten und die Wiedergabe im Dashboard verfolgen.",
+    "es": "Controle sus dispositivos Spotify Connect, inicie sus listas y siga la reproducción en el panel."
   },
   "version": "1.3.0",
   "docker_image": "ghcr.io/william-de71/gladys-spotify:1.3.0",
@@ -18,25 +20,33 @@
       "type": "section",
       "label": {
         "en": "Connect your Spotify account",
-        "fr": "Connectez votre compte Spotify"
+        "fr": "Connectez votre compte Spotify",
+        "de": "Verbinden Sie Ihr Spotify-Konto",
+        "es": "Conecte su cuenta de Spotify"
       },
       "description": {
         "en": "This integration controls your Spotify Connect devices through the Spotify Web API. A Spotify Premium account is required to control playback. First create a free Spotify application, declare the redirect URI shown below in it, paste its Client ID and Client Secret here, then click \"Connect with Spotify\".",
-        "fr": "Cette intégration pilote vos appareils Spotify Connect via l'API Web de Spotify. Un compte Spotify Premium est nécessaire pour contrôler la lecture. Créez d'abord une application Spotify gratuite, déclarez-y l'adresse de redirection affichée plus bas, collez son Client ID et son Client Secret ici, puis cliquez sur « Se connecter avec Spotify »."
+        "fr": "Cette intégration pilote vos appareils Spotify Connect via l'API Web de Spotify. Un compte Spotify Premium est nécessaire pour contrôler la lecture. Créez d'abord une application Spotify gratuite, déclarez-y l'adresse de redirection affichée plus bas, collez son Client ID et son Client Secret ici, puis cliquez sur « Se connecter avec Spotify ».",
+        "de": "Diese Integration steuert Ihre Spotify-Connect-Geräte über die Spotify Web API. Zur Steuerung der Wiedergabe ist ein Spotify-Premium-Konto erforderlich. Erstellen Sie zuerst eine kostenlose Spotify-Anwendung, tragen Sie dort die unten angezeigte Weiterleitungsadresse ein, fügen Sie hier deren Client ID und Client Secret ein und klicken Sie dann auf „Mit Spotify verbinden“.",
+        "es": "Esta integración controla sus dispositivos Spotify Connect a través de la Web API de Spotify. Se necesita una cuenta Spotify Premium para controlar la reproducción. Primero cree una aplicación de Spotify gratuita, declare en ella la dirección de redirección que se muestra más abajo, pegue aquí su Client ID y su Client Secret y haga clic en «Conectar con Spotify»."
       },
       "links": [
         {
           "url": "https://developer.spotify.com/dashboard",
           "label": {
             "en": "Spotify Developer Dashboard",
-            "fr": "Tableau de bord développeur Spotify"
+            "fr": "Tableau de bord développeur Spotify",
+            "de": "Spotify-Entwickler-Dashboard",
+            "es": "Panel de desarrollador de Spotify"
           }
         },
         {
           "url": "https://developer.spotify.com/documentation/web-api",
           "label": {
             "en": "Spotify Web API documentation",
-            "fr": "Documentation de l'API Web Spotify"
+            "fr": "Documentation de l'API Web Spotify",
+            "de": "Dokumentation der Spotify Web API",
+            "es": "Documentación de la Web API de Spotify"
           }
         }
       ]
@@ -46,11 +56,15 @@
       "type": "string",
       "label": {
         "en": "Client ID",
-        "fr": "Client ID"
+        "fr": "Client ID",
+        "de": "Client ID",
+        "es": "Client ID"
       },
       "placeholder": {
         "en": "Your Spotify app Client ID",
-        "fr": "Le Client ID de votre application Spotify"
+        "fr": "Le Client ID de votre application Spotify",
+        "de": "Die Client ID Ihrer Spotify-Anwendung",
+        "es": "El Client ID de su aplicación de Spotify"
       },
       "required": true
     },
@@ -59,11 +73,15 @@
       "type": "secret",
       "label": {
         "en": "Client Secret",
-        "fr": "Client Secret"
+        "fr": "Client Secret",
+        "de": "Client Secret",
+        "es": "Client Secret"
       },
       "placeholder": {
         "en": "Your Spotify app Client Secret",
-        "fr": "Le Client Secret de votre application Spotify"
+        "fr": "Le Client Secret de votre application Spotify",
+        "de": "Das Client Secret Ihrer Spotify-Anwendung",
+        "es": "El Client Secret de su aplicación de Spotify"
       },
       "required": true
     },
@@ -72,11 +90,15 @@
       "type": "oauth2",
       "label": {
         "en": "Connect with Spotify",
-        "fr": "Se connecter avec Spotify"
+        "fr": "Se connecter avec Spotify",
+        "de": "Mit Spotify verbinden",
+        "es": "Conectar con Spotify"
       },
       "description": {
         "en": "Once the Client ID and Client Secret are saved, click Connect to authorize Gladys on your Spotify account. If Gladys later reports missing permissions after an update, click it again: your devices and Gladys scenes are kept.",
-        "fr": "Une fois le Client ID et le Client Secret enregistrés, cliquez sur Se connecter pour autoriser Gladys sur votre compte Spotify. Si Gladys signale plus tard des autorisations manquantes après une mise à jour, cliquez à nouveau dessus : vos appareils et vos scènes Gladys seront conservés."
+        "fr": "Une fois le Client ID et le Client Secret enregistrés, cliquez sur Se connecter pour autoriser Gladys sur votre compte Spotify. Si Gladys signale plus tard des autorisations manquantes après une mise à jour, cliquez à nouveau dessus : vos appareils et vos scènes Gladys seront conservés.",
+        "de": "Sobald Client ID und Client Secret gespeichert sind, klicken Sie auf Verbinden, um Gladys für Ihr Spotify-Konto zu autorisieren. Meldet Gladys nach einem Update fehlende Berechtigungen, klicken Sie erneut darauf: Ihre Geräte und Gladys-Szenen bleiben erhalten.",
+        "es": "Una vez guardados el Client ID y el Client Secret, haga clic en Conectar para autorizar a Gladys en su cuenta de Spotify. Si más adelante Gladys indica que faltan permisos tras una actualización, vuelva a hacer clic: sus dispositivos y sus escenas de Gladys se conservan."
       }
     },
     {
@@ -84,11 +106,15 @@
       "type": "section",
       "label": {
         "en": "Browser could not return to Gladys?",
-        "fr": "Le navigateur n'a pas pu revenir à Gladys ?"
+        "fr": "Le navigateur n'a pas pu revenir à Gladys ?",
+        "de": "Browser konnte nicht zu Gladys zurückkehren?",
+        "es": "¿El navegador no pudo volver a Gladys?"
       },
       "description": {
         "en": "The return from Spotify is normally automatic. If your browser lands on a blank or error page instead of coming back to Gladys, the authorization did still succeed: copy the full address from your browser address bar, paste it below, save, then click \"Finish the connection\".",
-        "fr": "Le retour depuis Spotify est normalement automatique. Si votre navigateur aboutit à une page blanche ou d'erreur au lieu de revenir dans Gladys, l'autorisation a tout de même réussi : copiez l'adresse complète depuis la barre d'adresse de votre navigateur, collez-la ci-dessous, enregistrez, puis cliquez sur « Terminer la connexion »."
+        "fr": "Le retour depuis Spotify est normalement automatique. Si votre navigateur aboutit à une page blanche ou d'erreur au lieu de revenir dans Gladys, l'autorisation a tout de même réussi : copiez l'adresse complète depuis la barre d'adresse de votre navigateur, collez-la ci-dessous, enregistrez, puis cliquez sur « Terminer la connexion ».",
+        "de": "Die Rückkehr von Spotify erfolgt normalerweise automatisch. Landet Ihr Browser statt in Gladys auf einer leeren Seite oder einer Fehlerseite, war die Autorisierung trotzdem erfolgreich: Kopieren Sie die vollständige Adresse aus der Adressleiste Ihres Browsers, fügen Sie sie unten ein, speichern Sie und klicken Sie dann auf „Verbindung abschließen“.",
+        "es": "La vuelta desde Spotify es normalmente automática. Si su navegador termina en una página en blanco o de error en lugar de volver a Gladys, la autorización se ha concedido igualmente: copie la dirección completa de la barra de direcciones del navegador, péguela abajo, guarde y haga clic en «Finalizar la conexión»."
       }
     },
     {
@@ -96,11 +122,15 @@
       "type": "string",
       "label": {
         "en": "Returned address",
-        "fr": "Adresse de retour"
+        "fr": "Adresse de retour",
+        "de": "Rückgabeadresse",
+        "es": "Dirección de retorno"
       },
       "placeholder": {
         "en": "http://192.168.1.50:1444/dashboard/...?code=...&state=...",
-        "fr": "http://192.168.1.50:1444/dashboard/...?code=...&state=..."
+        "fr": "http://192.168.1.50:1444/dashboard/...?code=...&state=...",
+        "de": "http://192.168.1.50:1444/dashboard/...?code=...&state=...",
+        "es": "http://192.168.1.50:1444/dashboard/...?code=...&state=..."
       }
     }
   ],
@@ -109,7 +139,9 @@
       "key": "complete_connection",
       "label": {
         "en": "Finish the connection",
-        "fr": "Terminer la connexion"
+        "fr": "Terminer la connexion",
+        "de": "Verbindung abschließen",
+        "es": "Finalizar la conexión"
       },
       "timeout_seconds": 30
     },
@@ -117,7 +149,9 @@
       "key": "test_connection",
       "label": {
         "en": "Test the connection",
-        "fr": "Tester la connexion"
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
       },
       "timeout_seconds": 30
     },
@@ -125,11 +159,15 @@
       "key": "refresh_content",
       "label": {
         "en": "Refresh Spotify content",
-        "fr": "Actualiser les contenus Spotify"
+        "fr": "Actualiser les contenus Spotify",
+        "de": "Spotify-Inhalte aktualisieren",
+        "es": "Actualizar los contenidos de Spotify"
       },
       "description": {
         "en": "Fetch your playlists, recently played tracks and favorites again and republish them on the Spotify device.",
-        "fr": "Récupère à nouveau vos playlists, vos morceaux récemment écoutés et vos favoris, et les republie sur l'appareil Spotify."
+        "fr": "Récupère à nouveau vos playlists, vos morceaux récemment écoutés et vos favoris, et les republie sur l'appareil Spotify.",
+        "de": "Ruft Ihre Playlists, zuletzt gehörten Titel und Favoriten erneut ab und veröffentlicht sie wieder auf dem Spotify-Gerät.",
+        "es": "Vuelve a obtener sus listas, las canciones escuchadas recientemente y los favoritos, y los publica de nuevo en el dispositivo Spotify."
       },
       "timeout_seconds": 30
     },
@@ -137,7 +175,9 @@
       "key": "disconnect",
       "label": {
         "en": "Disconnect from Spotify",
-        "fr": "Se déconnecter de Spotify"
+        "fr": "Se déconnecter de Spotify",
+        "de": "Von Spotify trennen",
+        "es": "Desconectar de Spotify"
       },
       "timeout_seconds": 15
     }
@@ -147,11 +187,15 @@
       "key": "now_playing",
       "label": {
         "en": "Spotify now playing",
-        "fr": "Spotify en lecture"
+        "fr": "Spotify en lecture",
+        "de": "Spotify – Aktuelle Wiedergabe",
+        "es": "Spotify – Sonando ahora"
       },
       "description": {
         "en": "The track playing now with its cover and Previous / Play / Next buttons.",
-        "fr": "Le titre en cours avec sa pochette et les boutons Précédent / Lecture / Suivant."
+        "fr": "Le titre en cours avec sa pochette et les boutons Précédent / Lecture / Suivant.",
+        "de": "Der aktuelle Titel mit Cover und den Tasten Zurück / Abspielen / Weiter.",
+        "es": "La canción en curso con su portada y los botones Anterior / Reproducir / Siguiente."
       },
       "icon": "music",
       "settings": [
@@ -162,11 +206,15 @@
           "required": false,
           "label": {
             "en": "Spotify Connect device",
-            "fr": "Appareil Spotify Connect"
+            "fr": "Appareil Spotify Connect",
+            "de": "Spotify-Connect-Gerät",
+            "es": "Dispositivo Spotify Connect"
           },
           "description": {
             "en": "Offered to resume playback when nothing is playing.",
-            "fr": "Proposé pour reprendre la lecture quand rien n'est en cours."
+            "fr": "Proposé pour reprendre la lecture quand rien n'est en cours.",
+            "de": "Wird zum Fortsetzen der Wiedergabe angeboten, wenn nichts läuft.",
+            "es": "Se propone para reanudar la reproducción cuando no suena nada."
           }
         }
       ],
@@ -176,11 +224,15 @@
       "key": "quick_play",
       "label": {
         "en": "Spotify quick play",
-        "fr": "Spotify lancement rapide"
+        "fr": "Spotify lancement rapide",
+        "de": "Spotify – Schnellstart",
+        "es": "Spotify – Inicio rápido"
       },
       "description": {
         "en": "Up to 4 playlists, albums, artists or tracks to start in one tap.",
-        "fr": "Jusqu'à 4 playlists, albums, artistes ou titres à lancer en un geste."
+        "fr": "Jusqu'à 4 playlists, albums, artistes ou titres à lancer en un geste.",
+        "de": "Bis zu 4 Playlists, Alben, Künstler oder Titel, die mit einem Tippen starten.",
+        "es": "Hasta 4 listas, álbumes, artistas o canciones para iniciar con un toque."
       },
       "icon": "play-circle",
       "settings": [
@@ -191,11 +243,15 @@
           "required": false,
           "label": {
             "en": "Spotify Connect device",
-            "fr": "Appareil Spotify Connect"
+            "fr": "Appareil Spotify Connect",
+            "de": "Spotify-Connect-Gerät",
+            "es": "Dispositivo Spotify Connect"
           },
           "description": {
             "en": "Where to play. Leave empty for the device active at that moment.",
-            "fr": "Où lancer la lecture. Laissez vide pour l'appareil actif à ce moment-là."
+            "fr": "Où lancer la lecture. Laissez vide pour l'appareil actif à ce moment-là.",
+            "de": "Wo abgespielt wird. Leer lassen für das in dem Moment aktive Gerät.",
+            "es": "Dónde reproducir. Déjelo vacío para usar el dispositivo activo en ese momento."
           }
         },
         {
@@ -204,15 +260,21 @@
           "required": false,
           "label": {
             "en": "Spotify link 1",
-            "fr": "Lien Spotify 1"
+            "fr": "Lien Spotify 1",
+            "de": "Spotify-Link 1",
+            "es": "Enlace de Spotify 1"
           },
           "placeholder": {
             "en": "https://open.spotify.com/playlist/...",
-            "fr": "https://open.spotify.com/playlist/..."
+            "fr": "https://open.spotify.com/playlist/...",
+            "de": "https://open.spotify.com/playlist/...",
+            "es": "https://open.spotify.com/playlist/..."
           },
           "description": {
             "en": "In Spotify: Share > Copy link of a playlist, album, artist or track.",
-            "fr": "Dans Spotify : Partager > Copier le lien d'une playlist, d'un album, d'un artiste ou d'un titre."
+            "fr": "Dans Spotify : Partager > Copier le lien d'une playlist, d'un album, d'un artiste ou d'un titre.",
+            "de": "In Spotify: Teilen > Link kopieren bei einer Playlist, einem Album, einem Künstler oder einem Titel.",
+            "es": "En Spotify: Compartir > Copiar enlace de una lista, un álbum, un artista o una canción."
           }
         },
         {
@@ -221,11 +283,15 @@
           "required": false,
           "label": {
             "en": "Spotify link 2",
-            "fr": "Lien Spotify 2"
+            "fr": "Lien Spotify 2",
+            "de": "Spotify-Link 2",
+            "es": "Enlace de Spotify 2"
           },
           "placeholder": {
             "en": "https://open.spotify.com/playlist/...",
-            "fr": "https://open.spotify.com/playlist/..."
+            "fr": "https://open.spotify.com/playlist/...",
+            "de": "https://open.spotify.com/playlist/...",
+            "es": "https://open.spotify.com/playlist/..."
           }
         },
         {
@@ -234,11 +300,15 @@
           "required": false,
           "label": {
             "en": "Spotify link 3",
-            "fr": "Lien Spotify 3"
+            "fr": "Lien Spotify 3",
+            "de": "Spotify-Link 3",
+            "es": "Enlace de Spotify 3"
           },
           "placeholder": {
             "en": "https://open.spotify.com/playlist/...",
-            "fr": "https://open.spotify.com/playlist/..."
+            "fr": "https://open.spotify.com/playlist/...",
+            "de": "https://open.spotify.com/playlist/...",
+            "es": "https://open.spotify.com/playlist/..."
           }
         },
         {
@@ -247,11 +317,15 @@
           "required": false,
           "label": {
             "en": "Spotify link 4",
-            "fr": "Lien Spotify 4"
+            "fr": "Lien Spotify 4",
+            "de": "Spotify-Link 4",
+            "es": "Enlace de Spotify 4"
           },
           "placeholder": {
             "en": "https://open.spotify.com/playlist/...",
-            "fr": "https://open.spotify.com/playlist/..."
+            "fr": "https://open.spotify.com/playlist/...",
+            "de": "https://open.spotify.com/playlist/...",
+            "es": "https://open.spotify.com/playlist/..."
           }
         }
       ],
@@ -261,11 +335,15 @@
       "key": "recently_played",
       "label": {
         "en": "Spotify recently played",
-        "fr": "Spotify écoutés récemment"
+        "fr": "Spotify écoutés récemment",
+        "de": "Spotify – Zuletzt gehört",
+        "es": "Spotify – Recientes"
       },
       "description": {
         "en": "The latest tracks played on your Spotify account, with their covers.",
-        "fr": "Les derniers titres écoutés sur votre compte Spotify, avec leurs pochettes."
+        "fr": "Les derniers titres écoutés sur votre compte Spotify, avec leurs pochettes.",
+        "de": "Die zuletzt auf Ihrem Spotify-Konto gehörten Titel, mit ihren Covern.",
+        "es": "Las últimas canciones escuchadas en su cuenta de Spotify, con sus portadas."
       },
       "icon": "clock",
       "settings": [
@@ -278,7 +356,9 @@
           "default": 5,
           "label": {
             "en": "Tracks shown",
-            "fr": "Titres affichés"
+            "fr": "Titres affichés",
+            "de": "Angezeigte Titel",
+            "es": "Canciones mostradas"
           }
         }
       ]
