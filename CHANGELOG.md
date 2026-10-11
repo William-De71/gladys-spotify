@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/William-De71/gladys-spotify/compare/v1.3.0...v1.4.0) (2026-10-11)
+
+### Features
+
+* German and Spanish translations, README diagrams and license ([f85c207](https://github.com/William-De71/gladys-spotify/commit/f85c2070f87dca8b8d1455f28ad83643fb60e946))
+
 ## [1.3.0](https://github.com/William-De71/gladys-spotify/compare/v1.2.0...v1.3.0) (2026-10-11)
 
 ### Features
