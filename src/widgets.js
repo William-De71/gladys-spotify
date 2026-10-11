@@ -429,7 +429,7 @@ export function buildNowPlayingWidget({ snapshot, language, fallbackDevice = nul
         type: 'button',
         label: clip(t('resumeOn', language, { device: fallbackDevice.name }), 24),
         icon: 'play',
-        style: 'primary',
+        style: 'secondary',
         action: { key: WIDGET_ACTIONS.PLAY, params: { device_id: fallbackDevice.id } },
       });
     }
@@ -488,14 +488,14 @@ export function buildNowPlayingWidget({ snapshot, language, fallbackDevice = nul
           type: 'button',
           label: t('pause', language),
           icon: 'pause',
-          style: 'primary',
+          style: 'secondary',
           action: { key: WIDGET_ACTIONS.PAUSE, params },
         }
       : {
           type: 'button',
           label: t('play', language),
           icon: 'play',
-          style: 'primary',
+          style: 'secondary',
           action: { key: WIDGET_ACTIONS.PLAY, params },
         },
   );
