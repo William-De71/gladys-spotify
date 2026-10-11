@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/William-De71/gladys-spotify/compare/v1.2.0...v1.3.0) (2026-10-11)
+
+### Features
+
+* dashboard widgets (now playing, quick play, recently played) ([6342f34](https://github.com/William-De71/gladys-spotify/commit/6342f34e58594495a7efcbb81350b578e6a73bd5))
+
 ## [1.2.0](https://github.com/William-De71/gladys-spotify/compare/v1.1.0...v1.2.0) (2026-09-02)
 
 ### Features
