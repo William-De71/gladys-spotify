@@ -1,3 +1,13 @@
+## [1.4.1](https://github.com/William-De71/gladys-spotify/compare/v1.4.0...v1.4.1) (2026-10-11)
+
+### Bug Fixes
+
+* secondary style for the play/pause widget button ([8c2504c](https://github.com/William-De71/gladys-spotify/commit/8c2504c5449219c9b2fd16511e5d740d1bfe4a42))
+
+### Continuous Integration
+
+* push the release commit and tag atomically ([3adaaba](https://github.com/William-De71/gladys-spotify/commit/3adaaba0c9ec2d7135b758e55b68ecc2e5c70551))
+
 ## [1.4.0](https://github.com/William-De71/gladys-spotify/compare/v1.3.0...v1.4.0) (2026-10-11)
 
 ### Features
