@@ -48,7 +48,13 @@ export const API = {
   RECENTLY_PLAYED: `${BASE_API}/me/player/recently-played`,
   SAVED_TRACKS: `${BASE_API}/me/tracks`,
   QUEUE: `${BASE_API}/me/player/queue`,
+  // Catalog objects read by the quick-play widget: `${API.CATALOG}/albums/<id>`...
+  CATALOG: BASE_API,
 };
+
+// Every Spotify request (API and token endpoint) is aborted after this delay:
+// a hung connection must never block a command, a widget or the push loop.
+export const API_REQUEST_TIMEOUT_MS = 15 * 1000;
 
 // Config keys stored OUTSIDE the config_schema (internal storage, never shown in
 // the UI, never sent to the front) — the external equivalent of the core's

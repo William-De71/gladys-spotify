@@ -92,6 +92,9 @@ export function createContentState() {
     recentTracks: { options: [], count: 0 },
     favorites: { options: [], count: 0 },
     byValue: new Map(),
+    // Raw /me/playlists entries by playlist id: the quick-play widget reads
+    // their name and cover from here instead of one GET /playlists/{id} each.
+    playlistsById: new Map(),
     pendingSelection: null,
     // The feature key (see CONTENT_FEATURE_KEYS) that recorded pendingSelection
     // - so clearing an already-blank select never wipes a DIFFERENT select's
@@ -118,6 +121,11 @@ export async function refreshContent(client, contentState) {
     client.fetchSavedTracks(),
   ]);
   contentState.playlists = buildPlaylistOptions(rawPlaylists);
+  contentState.playlistsById = new Map(
+    rawPlaylists
+      .filter((playlist) => playlist && playlist.id)
+      .map((playlist) => [playlist.id, playlist]),
+  );
   contentState.recentTracks = buildRecentTrackOptions(rawRecentlyPlayed);
   contentState.favorites = buildFavoriteOptions(rawSavedTracks);
   contentState.byValue = new Map(
@@ -296,7 +304,8 @@ async function playPendingSelection(client, deviceId, pendingSelection) {
  * @param {object} gladys - The Gladys SDK instance.
  * @param {SpotifyClient} client - The Spotify client.
  * @param {object} loopState - Mutable state kept across ticks.
- * @returns {Promise<void>} Resolves once the state is pushed.
+ * @returns {Promise<object|null|undefined>} The raw GET /me/player response
+ *   (null when no device is active), undefined when it could not be read.
  * @example
  * await refreshPlaybackState(gladys, client, loopState);
  */
@@ -306,7 +315,7 @@ export async function refreshPlaybackState(gladys, client, loopState) {
     data = await client.getPlayer();
   } catch (e) {
     logger.debug(`Spotify: unable to refresh playback state: ${e.message}`);
-    return;
+    return undefined;
   }
   const activeDeviceId = data && data.device ? data.device.id : null;
 
@@ -338,6 +347,7 @@ export async function refreshPlaybackState(gladys, client, loopState) {
   }
 
   loopState.lastActiveDeviceId = activeDeviceId;
+  return data;
 }
 
 /**
@@ -364,20 +374,27 @@ async function publishStateSafe(gladys, _client, spotifyDeviceId, featureKey, va
  * Start the autonomous playback-state push loop.
  * @param {object} gladys - The Gladys SDK instance.
  * @param {SpotifyClient} client - The Spotify client.
+ * @param {Function} [onPlayer] - Called with every GET /me/player response
+ *   read by the loop (null when nothing is active), so the dashboard widgets
+ *   can reuse it and follow the playback changes.
  * @returns {object} { stop, refreshSoon } — stop the loop, or trigger a quick
  *   refresh right after a command (both share the same loop state).
  * @example
  * const { stop, refreshSoon } = startPlaybackPush(gladys, client);
  */
-export function startPlaybackPush(gladys, client) {
+export function startPlaybackPush(gladys, client, onPlayer = () => {}) {
   const loopState = { lastActiveDeviceId: null };
+  const refresh = async () => {
+    const data = await refreshPlaybackState(gladys, client, loopState);
+    if (data !== undefined) {
+      onPlayer(data);
+    }
+  };
   const tick = () => {
     if (!client.isConnected()) {
       return;
     }
-    refreshPlaybackState(gladys, client, loopState).catch((e) =>
-      logger.debug(`Spotify playback push tick failed: ${e.message}`),
-    );
+    refresh().catch((e) => logger.debug(`Spotify playback push tick failed: ${e.message}`));
   };
   const interval = setInterval(tick, PLAYBACK_STATE_POLLING_FREQUENCY_IN_MS);
   tick();
@@ -387,7 +404,7 @@ export function startPlaybackPush(gladys, client) {
     // Spotify API needs a moment to report the new state).
     refreshSoon: () => {
       setTimeout(() => {
-        refreshPlaybackState(gladys, client, loopState).catch(() => {});
+        refresh().catch(() => {});
       }, REFRESH_AFTER_COMMAND_DELAY_IN_MS);
     },
   };

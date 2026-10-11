@@ -13,6 +13,7 @@ Built on the [Gladys integration SDK](https://github.com/GladysAssistant/integra
 | Volume                  | Set the volume of the active device (0-100)                                                           |
 | Playback state          | Read-only playing/paused state, pushed in real time                                                   |
 | Spotify content         | Separate "Spotify" device: 3 mutually-exclusive `text`/`select` (playlists, recent tracks, favorites) |
+| Dashboard widgets       | `now_playing` (cover + controls), `quick_play` (4 configurable links), `recently_played`              |
 
 A **Spotify Premium** account is required to control playback.
 
@@ -25,6 +26,9 @@ src/devices.js                discovery / setValue / playback-state + content re
 src/convertToGladysDevice.js  Spotify Connect device -> Gladys device/feature conversion
 src/convertContentDevice.js   the fixed "Spotify" content device (3 selects) -> Gladys device/feature
 src/content.js                playlists + recent tracks + favorites -> select options, value parsing (pure, no I/O)
+src/widgets.js                dashboard widget contents, i18n, Spotify link parsing (pure, no I/O)
+src/widgetHandlers.js         widget handlers: caches, actions, nudges from the playback loop
+src/images.js                 widget covers: Spotify CDN URL <-> image key, download
 src/constants.js              endpoints, scopes, config keys, timings, content limits
 ```
 
@@ -37,7 +41,7 @@ The user creates a Spotify application and pastes its **Client ID** and **Client
 
 The `redirect_uri` is provided by Gladys and used as-is — never hardcoded. Since [PR #2769](https://github.com/GladysAssistant/Gladys/pull/2769) the frontend passes the fixed HTTPS page `https://my.gladysassistant.com/redirect/oauth`, which unwraps the instance address from the `state` and bounces the browser back to the local Gladys. This works around Spotify rejecting any non-HTTPS, non-loopback redirect URI since April 2025. `toLoopbackRedirectUri()` returns HTTPS URIs untouched, so the flow needs no change here; the loopback rewrite only remains for older Gladys versions. The `state` is mandatory — the frontend refuses an authorize URL without one.
 
-Tokens are persisted through `gladys.setConfig()` under keys **not** declared in the `config_schema` (internal storage, never shown in the UI) and refreshed automatically. Two manifest actions are exposed: **Test the connection** and **Disconnect**.
+Tokens are persisted through `gladys.setConfig()` under keys **not** declared in the `config_schema` (internal storage, never shown in the UI) and refreshed automatically. Manifest actions: **Finish the connection** (manual fallback), **Test the connection**, **Refresh Spotify content** and **Disconnect**. A refresh answered with `invalid_grant` flags the connection as revoked: no further call reaches Spotify until a new authorization.
 
 ## Local development
 

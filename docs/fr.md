@@ -9,13 +9,14 @@ Cette intégration permet de contrôler vos appareils **Spotify Connect** depuis
 - **Volume** : réglage du volume de l'appareil actif.
 - **État de lecture** : Gladys reflète en temps réel si un appareil est en lecture ou en pause.
 - **Appareil « Spotify »** : un appareil séparé, unique, porte trois listes — playlists, morceaux récents, favoris. Choisir une option n'y lance rien : elle est simplement mémorisée comme sélection en attente, et le bouton lecture de n'importe quel appareil Spotify Connect la lance dès qu'on l'actionne.
-- **Actions** : tester la connexion, réautoriser, actualiser les playlists/morceaux récents/favoris, et se déconnecter, directement depuis l'écran de configuration.
+- **Widgets de tableau de bord** : lecture en cours avec pochette et commandes, lancement rapide de vos playlists/albums favoris, titres écoutés récemment.
+- **Actions** : tester la connexion, terminer une connexion manuellement, actualiser les playlists/morceaux récents/favoris, et se déconnecter, directement depuis l'écran de configuration. Pour réautoriser, il suffit de cliquer à nouveau sur « Se connecter avec Spotify ».
 
 ## Prérequis
 
 - Un **compte Spotify Premium** (obligatoire : l'API Spotify ne permet pas de contrôler la lecture avec un compte gratuit).
 - Une **application Spotify** créée sur le tableau de bord développeur (gratuit), pour obtenir un Client ID et un Client Secret.
-- Gladys Assistant 4.86.0 ou supérieur (pour les listes dynamiques de l'appareil « Spotify »).
+- Gladys Assistant 5.1.0 ou supérieur (widgets de tableau de bord).
 
 ## Créer votre application Spotify
 
@@ -107,6 +108,18 @@ Les podcasts ne sont pas renvoyés par l'endpoint Spotify des écoutes récentes
 
 Les listes playlists / morceaux récents / favoris nécessitent des autorisations qu'une connexion plus ancienne peut ne pas avoir accordées — en particulier les favoris, ajoutés après coup et qui demandent une autorisation supplémentaire (`user-library-read`). Si Gladys signale des autorisations manquantes, ou si une liste reste vide sur une connexion existante, cliquez à nouveau sur **« Se connecter avec Spotify »** dans l'écran de configuration : Spotify réaffiche l'écran d'autorisation avec les nouvelles permissions demandées (les autorisations déjà accordées s'acceptent en un clic), sans toucher à vos appareils, vos scènes ou aux commandes de transport déjà utilisées.
 
+## Widgets de tableau de bord
+
+L'intégration propose trois widgets, à ajouter depuis l'édition du tableau de bord (bloc « Intégrations »). Ils suivent automatiquement le thème clair/sombre et la langue de Gladys.
+
+- **Spotify en lecture** : ce que votre compte joue en ce moment, quel que soit l'appareil — pochette, titre, artiste et album (ou podcast), appareil, volume, lecture aléatoire et répétition — avec les boutons **Précédent**, **Lecture/Pause**, **Suivant** et **Ouvrir Spotify**. Le widget se met à jour de lui-même à chaque changement (titre, pause, volume, changement d'appareil), sans attendre. Réglage facultatif : un **appareil Spotify Connect**, proposé pour reprendre la lecture quand rien n'est en cours (uniquement s'il est en ligne).
+- **Spotify lancement rapide** : jusqu'à 4 playlists, albums, artistes ou titres, affichés avec leur pochette, chacun avec son bouton de lecture. Dans les réglages du widget, collez pour chaque emplacement un **lien Spotify** (dans Spotify : **Partager › Copier le lien**, par ex. `https://open.spotify.com/playlist/...`) ou une URI (`spotify:album:...`). Choisissez aussi l'**appareil** sur lequel lancer la lecture ; laissé vide, c'est l'appareil actif à ce moment-là qui est utilisé.
+- **Spotify écoutés récemment** : les derniers titres écoutés sur votre compte (1 à 8, 5 par défaut), avec pochette, heure d'écoute et lien vers Spotify ; le titre en cours est signalé.
+
+Les boutons des widgets agissent directement sur l'appareil indiqué : ils n'utilisent pas la sélection en attente de l'appareil « Spotify ». Comme pour le reste de l'intégration, un compte **Premium** est nécessaire pour les commandes de lecture.
+
+> ℹ️ Certaines playlists éditoriales de Spotify (« Today's Top Hits », Mix du jour…) ne sont plus lisibles par les applications tierces : leur nom et leur pochette peuvent alors manquer dans le lancement rapide (le widget affiche « Playlist 1 »…), et leur lecture peut être refusée par Spotify.
+
 ## Dépannage
 
 - **Spotify affiche « redirect_uri: Not matching configuration »** (ou n'affiche pas l'écran d'autorisation) : l'adresse déclarée dans votre application Spotify ne correspond pas exactement à celle utilisée par Gladys. Vérifiez que le champ **Redirect URIs** contient bien `https://my.gladysassistant.com/redirect/oauth`, sans slash final, et que vous avez cliqué sur **Add** puis **Save**. Si vous avez activé l'option « adresse de l'instance », c'est cette adresse-là qu'il faut déclarer.
@@ -114,6 +127,7 @@ Les listes playlists / morceaux récents / favoris nécessitent des autorisation
 - **« Spotify OAuth state mismatch »** : l'adresse collée provient d'une demande d'autorisation antérieure. N'ouvrez qu'**un seul** onglet d'autorisation à la fois (chaque clic génère une nouvelle demande, seule la dernière est valable), puis recommencez.
 - **« Cette adresse ne contient pas de code d'autorisation »** : vous avez probablement collé l'adresse après avoir rechargé la page d'erreur, ce qui a perdu les paramètres. Relancez « Se connecter avec Spotify » et copiez l'adresse **sans recharger** la page.
 - **Le code a expiré** (erreur `invalid_grant` au moment de terminer la connexion) : le code n'est valable que quelques minutes et une seule fois. Relancez « Se connecter avec Spotify ».
+- **« Spotify a révoqué l'accès de Gladys »** : l'autorisation n'est plus valable (accès retiré depuis votre compte Spotify, application supprimée, Client Secret régénéré…). L'intégration cesse alors d'interroger Spotify ; cliquez à nouveau sur « Se connecter avec Spotify ».
 
 ## Limitations
 

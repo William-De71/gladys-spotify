@@ -6,7 +6,8 @@
 //   1. instantiates the SDK (connection, auth, reconnection handled for you);
 //   2. registers the event handlers BEFORE connect();
 //   3. exposes the OAuth2 flow (onOAuthAuthorizeUrl / onOAuthCallback);
-//   4. publishes the discovered Spotify Connect devices once connected.
+//   4. publishes the discovered Spotify Connect devices once connected;
+//   5. serves the dashboard widgets (src/widgetHandlers.js).
 //
 // Auth model: the user creates a Spotify app and pastes its Client ID / Client
 // Secret in the Configuration screen (config_schema). Clicking "Connect with
@@ -26,6 +27,7 @@ import {
   refreshContent,
   startContentRefresh,
 } from './src/devices.js';
+import { registerWidgets } from './src/widgetHandlers.js';
 
 const gladys = new GladysIntegration();
 const client = new SpotifyClient(gladys);
@@ -36,6 +38,8 @@ let playback = null;
 let contentRefresh = null;
 // Current Spotify content cache (playlists + recently played + favorites).
 const contentState = createContentState();
+// Dashboard widgets: fed by the playback push loop, reset on disconnection.
+const widgets = registerWidgets(gladys, client, { contentState, getPlayback: () => playback });
 
 /**
  * Build the connection-status message: a plain "connected" ack, or a warning
@@ -95,7 +99,8 @@ async function publishDevicesIfConnected() {
  * onOAuthCallback) must be able to do so regardless, since those loops drive
  * the transport-control features and have nothing to do with content having
  * refreshed successfully. Falls back to whatever the cache already held.
- * @returns {Promise<{playlistCount: number, trackCount: number, favoriteCount: number}>} The refreshed counts, or the previous ones on failure.
+ * @returns {Promise<{playlistCount: number, trackCount: number, favoriteCount: number, error: Error|null}>}
+ *   The refreshed counts, or the previous ones with the error on failure.
  */
 async function refreshContentAndRepublish() {
   let counts = {
@@ -103,21 +108,23 @@ async function refreshContentAndRepublish() {
     trackCount: contentState.recentTracks.count,
     favoriteCount: contentState.favorites.count,
   };
+  let error = null;
   try {
     counts = await refreshContent(client, contentState);
   } catch (e) {
+    error = e;
     logger.error(
       `Spotify: content refresh failed, keeping the previous content cache: ${e.message}`,
     );
   }
   await publishDevicesIfConnected();
-  return counts;
+  return { ...counts, error };
 }
 
 /** (Re)start the autonomous playback-state push loop. */
 function restartPlaybackPush() {
   stopPlaybackPushIfRunning();
-  playback = startPlaybackPush(gladys, client);
+  playback = startPlaybackPush(gladys, client, widgets.onPlayer);
 }
 
 /** Stop the playback push loop if it is running. */
@@ -252,18 +259,19 @@ gladys.onAction('refresh_content', async () => {
       fr: "Spotify non connecté. Cliquez d'abord sur « Se connecter avec Spotify ».",
     };
   }
-  try {
-    const { playlistCount, trackCount, favoriteCount } = await refreshContentAndRepublish();
+  // refreshContentAndRepublish never throws: a failed refresh comes back as
+  // `error`, with the previous counts.
+  const { playlistCount, trackCount, favoriteCount, error } = await refreshContentAndRepublish();
+  if (error) {
     return {
-      en: `Content refreshed: ${playlistCount} playlist(s), ${trackCount} recent track(s), ${favoriteCount} favorite(s).`,
-      fr: `Contenus actualisés : ${playlistCount} playlist(s), ${trackCount} morceau(x) récent(s), ${favoriteCount} favori(s).`,
-    };
-  } catch (e) {
-    return {
-      en: `Content refresh failed: ${e.message}`,
-      fr: `Échec de l'actualisation des contenus : ${e.message}`,
+      en: `Content refresh failed: ${error.message}`,
+      fr: `Échec de l'actualisation des contenus : ${error.message}`,
     };
   }
+  return {
+    en: `Content refreshed: ${playlistCount} playlist(s), ${trackCount} recent track(s), ${favoriteCount} favorite(s).`,
+    fr: `Contenus actualisés : ${playlistCount} playlist(s), ${trackCount} morceau(x) récent(s), ${favoriteCount} favori(s).`,
+  };
 });
 
 // --- Manifest action: test the connection ------------------------------------
@@ -295,6 +303,7 @@ gladys.onAction('disconnect', async () => {
   await client.clearTokens();
   stopPlaybackPushIfRunning();
   stopContentRefreshIfRunning();
+  widgets.reset();
   await gladys.setConnectionStatus(false).catch(() => {});
   return {
     en: 'Disconnected from Spotify. The stored tokens have been removed.',

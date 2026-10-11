@@ -224,3 +224,90 @@ test('playContext() still maps PREMIUM_REQUIRED to its dedicated message', async
     restore();
   }
 });
+
+/**
+ * A client whose access token is expired, with credentials in its config.
+ * @param {object} [gladysExtra] - Extra SDK stub methods.
+ * @returns {SpotifyClient} The client.
+ */
+function expiredClient(gladysExtra = {}) {
+  const client = new SpotifyClient({
+    getConfig: async () => ({ client_id: 'id', client_secret: 'secret' }),
+    setConfig: async () => {},
+    ...gladysExtra,
+  });
+  client.accessToken = 'old';
+  client.refreshToken = 'refresh';
+  client.tokenExpiresAt = 0;
+  return client;
+}
+
+test('concurrent calls share a single token refresh', async () => {
+  const client = expiredClient();
+  let tokenCalls = 0;
+  const restore = stubFetch(async (url) => {
+    if (String(url).includes('/api/token')) {
+      tokenCalls += 1;
+      await sleep(20);
+      return new Response(JSON.stringify({ access_token: 'new', expires_in: 3600 }), {
+        status: 200,
+      });
+    }
+    return new Response('{"items":[]}', { status: 200 });
+  });
+  try {
+    await Promise.all([
+      client.callApi('GET', 'https://api.spotify.com/v1/me/playlists'),
+      client.callApi('GET', 'https://api.spotify.com/v1/me/tracks'),
+      client.callApi('GET', 'https://api.spotify.com/v1/me/player'),
+    ]);
+  } finally {
+    restore();
+  }
+  assert.equal(tokenCalls, 1);
+  assert.equal(client.accessToken, 'new');
+});
+
+test('invalid_grant flags the connection as revoked and stops hitting the token endpoint', async () => {
+  const statuses = [];
+  const client = expiredClient({
+    setConnectionStatus: async (connected, message) => statuses.push({ connected, message }),
+  });
+  let tokenCalls = 0;
+  const restore = stubFetch(async () => {
+    tokenCalls += 1;
+    return new Response('{"error":"invalid_grant","error_description":"Refresh token revoked"}', {
+      status: 400,
+    });
+  });
+  try {
+    await assert.rejects(client.getPlayer(), /revoked/);
+    await assert.rejects(client.getPlayer(), /revoked/);
+  } finally {
+    restore();
+  }
+  assert.equal(tokenCalls, 1);
+  assert.equal(statuses.length, 1);
+  assert.equal(statuses[0].connected, false);
+
+  // A new authorization (different refresh token) clears the flag.
+  await client.storeTokens({ accessToken: 'a', refreshToken: 'other', expiresIn: 3600 });
+  assert.equal(client.authRevoked, false);
+});
+
+test('setVolume clamps the volume to 0-100', async () => {
+  const client = connectedClient();
+  const urls = [];
+  const restore = stubFetch(async (url) => {
+    urls.push(String(url));
+    return new Response(null, { status: 204 });
+  });
+  try {
+    await client.setVolume('dev', 150);
+    await client.setVolume('dev', 'abc');
+  } finally {
+    restore();
+  }
+  assert.match(urls[0], /volume_percent=100&/);
+  assert.match(urls[1], /volume_percent=0&/);
+});

@@ -9,9 +9,10 @@
 //   - `fetch` is the Node built-in (Node >= 18), no `undici` dependency;
 //   - device states are pushed through `gladys.publishState(...)`, not events.
 //
-// PKCE note: the authorize URL (which stores a code_verifier + state) and the
-// OAuth callback (which consumes them) run in the SAME container process, so the
-// verifier is kept in instance memory between the two steps.
+// PKCE note: the state + code_verifier generated for the authorize URL are
+// persisted in the config (CONFIG_KEYS), so the callback still works if the
+// container restarts between the two OAuth steps; the in-memory copies are
+// only a fallback.
 // -----------------------------------------------------------------------------
 
 import crypto from 'crypto';
@@ -25,6 +26,7 @@ import {
   CONFIG_SCHEMA_KEYS,
   LOOPBACK_HOST,
   TOKEN_EXPIRATION_MARGIN_IN_MS,
+  API_REQUEST_TIMEOUT_MS,
   PLAYLISTS_PAGE_SIZE,
   MAX_PLAYLISTS,
   RECENTLY_PLAYED_LIMIT,
@@ -86,6 +88,18 @@ export class SpotifyClient {
     // in the future, callApi refuses new requests immediately instead of
     // hammering Spotify again before the cooldown it asked for has elapsed.
     this.rateLimitedUntil = 0;
+    // In-flight token refresh, shared by concurrent callers (the content
+    // refresh fires three requests at once, the push loop and a widget may
+    // run alongside): Spotify may rotate the refresh token, so parallel
+    // refreshes could invalidate each other.
+    this.refreshPromise = null;
+    // Set when Spotify answers `invalid_grant` to a refresh (access revoked
+    // from the Spotify account, app deleted, secret rotated...): every call
+    // fails fast instead of hitting the token endpoint on each poll, until a
+    // new authorization stores a different refresh token.
+    this.authRevoked = false;
+    // Last volume command (ms epoch), see VOLUME_COMMAND_GRACE_PERIOD_IN_MS.
+    this.lastVolumeCommandAt = 0;
   }
 
   /**
@@ -106,8 +120,12 @@ export class SpotifyClient {
    */
   async loadTokens() {
     const config = (await this.gladys.getConfig()) || {};
+    const refreshToken = config[CONFIG_KEYS.REFRESH_TOKEN] || null;
+    if (refreshToken !== this.refreshToken) {
+      this.authRevoked = false;
+    }
     this.accessToken = config[CONFIG_KEYS.ACCESS_TOKEN] || null;
-    this.refreshToken = config[CONFIG_KEYS.REFRESH_TOKEN] || null;
+    this.refreshToken = refreshToken;
     this.tokenExpiresAt = Number(config[CONFIG_KEYS.TOKEN_EXPIRES_AT]) || 0;
   }
 
@@ -117,6 +135,9 @@ export class SpotifyClient {
    * @returns {Promise<void>} Resolves once the tokens are stored.
    */
   async storeTokens({ accessToken, refreshToken, expiresIn }) {
+    if ((refreshToken || null) !== this.refreshToken) {
+      this.authRevoked = false;
+    }
     this.accessToken = accessToken || null;
     this.refreshToken = refreshToken || null;
     this.tokenExpiresAt = expiresIn
@@ -290,10 +311,26 @@ export class SpotifyClient {
   }
 
   /**
-   * Refresh the access token with the stored refresh token.
+   * Refresh the access token with the stored refresh token. Concurrent callers
+   * share the same in-flight refresh.
    * @returns {Promise<void>} Resolves once the access token is refreshed.
    */
   async refreshAccessToken() {
+    if (!this.refreshPromise) {
+      this.refreshPromise = this.doRefreshAccessToken().finally(() => {
+        this.refreshPromise = null;
+      });
+    }
+    return this.refreshPromise;
+  }
+
+  /**
+   * Refresh the access token (see refreshAccessToken). An `invalid_grant`
+   * answer means the authorization is gone for good: the connection is
+   * flagged as revoked and reported to Gladys.
+   * @returns {Promise<void>} Resolves once the access token is refreshed.
+   */
+  async doRefreshAccessToken() {
     const { clientId, clientSecret } = await this.getCredentials();
     if (!clientId || !clientSecret) {
       throw new Error('Spotify is not configured.');
@@ -305,7 +342,29 @@ export class SpotifyClient {
       grant_type: 'refresh_token',
       refresh_token: this.refreshToken,
     });
-    const data = await this.postToken(clientId, clientSecret, body);
+    let data;
+    try {
+      data = await this.postToken(clientId, clientSecret, body);
+    } catch (e) {
+      if (/HTTP 400\b.*invalid_grant/s.test(e.message)) {
+        this.authRevoked = true;
+        logger.error(
+          'Spotify refused the stored authorization (invalid_grant): reconnection needed.',
+        );
+        if (typeof this.gladys.setConnectionStatus === 'function') {
+          await this.gladys
+            .setConnectionStatus(false, {
+              en: 'Spotify revoked the access of Gladys. Click "Connect with Spotify" again.',
+              fr: "Spotify a révoqué l'accès de Gladys. Cliquez à nouveau sur « Se connecter avec Spotify ».",
+            })
+            .catch(() => {});
+        }
+        throw new Error('Spotify revoked the authorization: click "Connect with Spotify" again.', {
+          cause: e,
+        });
+      }
+      throw e;
+    }
     await this.storeTokens({
       accessToken: data.access_token,
       // Spotify does not always return a new refresh token: keep the current one.
@@ -330,6 +389,7 @@ export class SpotifyClient {
         Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
       },
       body: body.toString(),
+      signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
     });
     const rawBody = await response.text();
     if (!response.ok) {
@@ -345,6 +405,9 @@ export class SpotifyClient {
   async getAccessToken() {
     if (!this.refreshToken) {
       throw new Error('Spotify is not connected.');
+    }
+    if (this.authRevoked) {
+      throw new Error('Spotify revoked the authorization: click "Connect with Spotify" again.');
     }
     if (!this.accessToken || Date.now() >= this.tokenExpiresAt) {
       await this.refreshAccessToken();
@@ -377,16 +440,18 @@ export class SpotifyClient {
       method,
       headers: { Authorization: `Bearer ${accessToken}` },
     };
+    const send = () =>
+      fetch(url, { ...options, signal: AbortSignal.timeout(API_REQUEST_TIMEOUT_MS) });
     if (body !== undefined) {
       options.headers['Content-Type'] = 'application/json';
       options.body = JSON.stringify(body);
     }
-    let response = await fetch(url, options);
+    let response = await send();
     if (response.status === 401) {
       // Access token rejected: refresh once and retry.
       await this.refreshAccessToken();
       options.headers.Authorization = `Bearer ${this.accessToken}`;
-      response = await fetch(url, options);
+      response = await send();
     }
     if (response.status === 429) {
       // Respect Retry-After and stop calling Spotify until it elapses, instead
@@ -458,11 +523,26 @@ export class SpotifyClient {
   }
 
   /**
-   * Get the current playback state (GET /me/player).
-   * @returns {Promise<object|null>} The raw playback response, or null.
+   * Get the current playback state (GET /me/player). Asks for podcast
+   * episodes too, otherwise Spotify reports an episode with a null `item`.
+   * @returns {Promise<object|null>} The raw playback response, or null when
+   *   no device is active (HTTP 204).
    */
   async getPlayer() {
-    return this.callApi('GET', API.PLAYER);
+    return this.callApi('GET', `${API.PLAYER}?additional_types=episode`);
+  }
+
+  /**
+   * Read a catalog object (GET /playlists/{id}, /albums/{id}, /artists/{id}
+   * or /tracks/{id}), for the quick-play widget.
+   * @param {string} kind - 'playlist' | 'album' | 'artist' | 'track'.
+   * @param {string} id - The Spotify id (base62, validated by the caller).
+   * @returns {Promise<object|null>} The raw object.
+   */
+  async getCatalogItem(kind, id) {
+    const fields =
+      kind === 'playlist' ? '?fields=name,images,external_urls,owner(display_name)' : '';
+    return this.callApi('GET', `${API.CATALOG}/${kind}s/${encodeURIComponent(id)}${fields}`);
   }
 
   /**
@@ -508,10 +588,8 @@ export class SpotifyClient {
    * @returns {Promise<void>} Resolves when the command is sent.
    */
   async setVolume(deviceId, volumePercent) {
-    await this.callApi(
-      'PUT',
-      `${API.VOLUME}?volume_percent=${Math.round(Number(volumePercent))}&device_id=${deviceId}`,
-    );
+    const volume = Math.min(100, Math.max(0, Math.round(Number(volumePercent) || 0)));
+    await this.callApi('PUT', `${API.VOLUME}?volume_percent=${volume}&device_id=${deviceId}`);
   }
 
   /**
@@ -642,10 +720,11 @@ export class SpotifyClient {
 
   /**
    * Fetch the recently played tracks (GET /me/player/recently-played).
+   * @param {number} [limit] - How many items (1-50, Spotify's cap by default).
    * @returns {Promise<Array>} The raw Spotify play-history items (up to 50).
    */
-  async fetchRecentlyPlayed() {
-    const data = await this.callApi('GET', `${API.RECENTLY_PLAYED}?limit=${RECENTLY_PLAYED_LIMIT}`);
+  async fetchRecentlyPlayed(limit = RECENTLY_PLAYED_LIMIT) {
+    const data = await this.callApi('GET', `${API.RECENTLY_PLAYED}?limit=${limit}`);
     return data && Array.isArray(data.items) ? data.items : [];
   }
 
