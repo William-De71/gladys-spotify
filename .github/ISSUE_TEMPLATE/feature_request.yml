@@ -1,0 +1,21 @@
+name: Feature request
+description: Something the integration could do for you.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you would like to do
+      description: The use case first (a scene, a dashboard, a notification…), then the idea.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Spotify Connect device
+      description: The device or app concerned, if any (what Spotify lets an app control depends on it).
+  - type: input
+    id: versions
+    attributes:
+      label: Gladys and integration versions
+      placeholder: 'Gladys 5.1.0, integration 1.5.0'
