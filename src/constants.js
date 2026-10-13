@@ -106,6 +106,14 @@ export const TOKEN_EXPIRATION_MARGIN_IN_MS = 60 * 1000;
 // How often the playback state is polled and pushed to Gladys.
 export const PLAYBACK_STATE_POLLING_FREQUENCY_IN_MS = 15 * 1000;
 
+// An unchanged playback state or volume is re-sent once this old, so a stable
+// value stays recently dated in Gladys (only the changes are sent otherwise).
+export const STATE_HEARTBEAT_MS = 60 * 60 * 1000;
+
+// How often the online Spotify Connect devices are read for the transport
+// badge of each device (one GET /me/player/devices).
+export const TRANSPORT_REFRESH_INTERVAL_MS = 60 * 1000;
+
 // Delay before refreshing the playback state after a command: the Spotify API
 // needs a moment to report the new state.
 export const REFRESH_AFTER_COMMAND_DELAY_IN_MS = 500;

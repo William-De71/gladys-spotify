@@ -6,7 +6,8 @@
 //     Spotify device id is the segment right before the feature key (or the last
 //     segment of the device external_id). A Spotify device id has no ':', so a
 //     split is safe;
-//   - states are pushed with `gladys.publishState(featureExternalId, value)`;
+//   - the playback states are pushed with `gladys.publishChangedStates` (only
+//     what changed), the select echoes with `gladys.publishState`;
 //   - the playback state is pushed by an autonomous loop (setInterval), like the
 //     Freebox camera push, independent from any poll ack.
 //
@@ -40,6 +41,8 @@ import {
   CONTENT_REFRESH_INTERVAL_MS,
   CONTENT_FEATURE_KEYS,
   NOT_SELECTED_VALUE,
+  DEVICE_TYPE,
+  STATE_HEARTBEAT_MS,
 } from './constants.js';
 
 /**
@@ -299,8 +302,26 @@ async function playPendingSelection(client, deviceId, pendingSelection) {
 }
 
 /**
+ * The feature external ids of the devices the user created in Gladys: a state
+ * of any other feature would make the core refuse the whole batch.
+ * @param {object} gladys - The Gladys SDK instance (`devices` kept up to date).
+ * @returns {Set<string>} The ids.
+ */
+function createdFeatureIds(gladys) {
+  return new Set(
+    (gladys.devices || []).flatMap((device) =>
+      (device.features || []).map((feature) => feature.external_id),
+    ),
+  );
+}
+
+/**
  * Refresh the playback state once and push it to Gladys.
- * Pushes the playback-state and volume features of the active device.
+ * Pushes the playback-state and volume features of the active device, and
+ * "paused" on the device that stopped being the active one. Only the values
+ * that changed reach Gladys (publishChangedStates, re-sent once an hour so a
+ * stable value stays recently dated); the SDK forgets them when the user
+ * creates a device, so a new device gets its states on the next read.
  * @param {object} gladys - The Gladys SDK instance.
  * @param {SpotifyClient} client - The Spotify client.
  * @param {object} loopState - Mutable state kept across ticks.
@@ -318,56 +339,45 @@ export async function refreshPlaybackState(gladys, client, loopState) {
     return undefined;
   }
   const activeDeviceId = data && data.device ? data.device.id : null;
+  const states = [];
+  const state = (spotifyDeviceId, featureKey, value) =>
+    states.push({
+      device_feature_external_id: gladys
+        .externalIds(DEVICE_TYPE, spotifyDeviceId)
+        .feature(featureKey),
+      state: value,
+    });
 
   // The device that was active but no longer is: mark it paused.
   if (loopState.lastActiveDeviceId && loopState.lastActiveDeviceId !== activeDeviceId) {
-    await publishStateSafe(
-      gladys,
-      client,
-      loopState.lastActiveDeviceId,
-      'playback-state',
-      MUSIC_PLAYBACK_STATE.PAUSED,
-    );
+    state(loopState.lastActiveDeviceId, 'playback-state', MUSIC_PLAYBACK_STATE.PAUSED);
   }
 
   if (activeDeviceId) {
-    const playbackState = data.is_playing
-      ? MUSIC_PLAYBACK_STATE.PLAYING
-      : MUSIC_PLAYBACK_STATE.PAUSED;
-    await publishStateSafe(gladys, client, activeDeviceId, 'playback-state', playbackState);
-
+    state(
+      activeDeviceId,
+      'playback-state',
+      data.is_playing ? MUSIC_PLAYBACK_STATE.PLAYING : MUSIC_PLAYBACK_STATE.PAUSED,
+    );
     // Right after a volume command the API still reports the old volume: don't
     // push it back or the volume slider jumps to the previous value.
     const volumeJustSet =
       Date.now() - (client.lastVolumeCommandAt || 0) < VOLUME_COMMAND_GRACE_PERIOD_IN_MS;
     const volume = data.device.volume_percent;
     if (!volumeJustSet && volume !== null && volume !== undefined) {
-      await publishStateSafe(gladys, client, activeDeviceId, 'volume', volume);
+      state(activeDeviceId, 'volume', volume);
     }
   }
 
   loopState.lastActiveDeviceId = activeDeviceId;
-  return data;
-}
-
-/**
- * Publish a feature state, swallowing the "feature does not exist" errors:
- * the Spotify device may not have been created by the user in Gladys.
- * @param {object} gladys - The Gladys SDK instance.
- * @param {SpotifyClient} _client - The Spotify client (unused, kept for symmetry).
- * @param {string} spotifyDeviceId - The Spotify device id.
- * @param {string} featureKey - The feature key (e.g. 'volume').
- * @param {number} value - The value to publish.
- * @returns {Promise<void>} Resolves once published (or silently ignored).
- */
-async function publishStateSafe(gladys, _client, spotifyDeviceId, featureKey, value) {
-  const featureExternalId = gladys.externalIds('spotify', spotifyDeviceId).feature(featureKey);
-  try {
-    await gladys.publishState(featureExternalId, value);
-  } catch (e) {
-    // The device/feature may not exist in Gladys (not created by the user).
-    logger.debug(`Spotify: publishState ignored for ${featureExternalId}: ${e.message}`);
+  const created = createdFeatureIds(gladys);
+  const known = states.filter((entry) => created.has(entry.device_feature_external_id));
+  if (known.length > 0) {
+    await gladys
+      .publishChangedStates(known, { heartbeat: STATE_HEARTBEAT_MS })
+      .catch((e) => logger.debug(`Spotify: playback states not published: ${e.message}`));
   }
+  return data;
 }
 
 /**
