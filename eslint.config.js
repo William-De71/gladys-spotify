@@ -31,6 +31,11 @@ export default [
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
+  // The illustration renderer runs in a browser page (docs/illustrations).
+  {
+    files: ['docs/illustrations/render.js'],
+    languageOptions: { sourceType: 'script', globals: { ...globals.browser } },
+  },
   // Prettier last: it only removes rules, so it must win.
   prettier,
 ];
