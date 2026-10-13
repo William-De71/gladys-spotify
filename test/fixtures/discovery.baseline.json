@@ -1,0 +1,185 @@
+{
+  "generated_from": "v1.4.1 (624cc82)",
+  "discovery": {
+    "ext:spotify:spotify:a1b2c3d4e5f6": {
+      "external_id": "ext:spotify:spotify:a1b2c3d4e5f6",
+      "features": [
+        {
+          "external_id": "ext:spotify:spotify:a1b2c3d4e5f6:play",
+          "category": "music",
+          "type": "play",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "external_id": "ext:spotify:spotify:a1b2c3d4e5f6:pause",
+          "category": "music",
+          "type": "pause",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "external_id": "ext:spotify:spotify:a1b2c3d4e5f6:previous",
+          "category": "music",
+          "type": "previous",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "external_id": "ext:spotify:spotify:a1b2c3d4e5f6:next",
+          "category": "music",
+          "type": "next",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "external_id": "ext:spotify:spotify:a1b2c3d4e5f6:volume",
+          "category": "music",
+          "type": "volume",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "external_id": "ext:spotify:spotify:a1b2c3d4e5f6:playback-state",
+          "category": "music",
+          "type": "playback_state",
+          "min": 0,
+          "max": 1
+        }
+      ]
+    },
+    "ext:spotify:spotify:0f9e8d7c6b5a": {
+      "external_id": "ext:spotify:spotify:0f9e8d7c6b5a",
+      "features": [
+        {
+          "external_id": "ext:spotify:spotify:0f9e8d7c6b5a:play",
+          "category": "music",
+          "type": "play",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "external_id": "ext:spotify:spotify:0f9e8d7c6b5a:pause",
+          "category": "music",
+          "type": "pause",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "external_id": "ext:spotify:spotify:0f9e8d7c6b5a:previous",
+          "category": "music",
+          "type": "previous",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "external_id": "ext:spotify:spotify:0f9e8d7c6b5a:next",
+          "category": "music",
+          "type": "next",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "external_id": "ext:spotify:spotify:0f9e8d7c6b5a:volume",
+          "category": "music",
+          "type": "volume",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "external_id": "ext:spotify:spotify:0f9e8d7c6b5a:playback-state",
+          "category": "music",
+          "type": "playback_state",
+          "min": 0,
+          "max": 1
+        }
+      ]
+    },
+    "ext:spotify:spotify:content": {
+      "external_id": "ext:spotify:spotify:content",
+      "features": [
+        {
+          "external_id": "ext:spotify:spotify:content:playlists",
+          "category": "text",
+          "type": "select",
+          "min": 0,
+          "max": 1,
+          "option_values": ["none", "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"]
+        },
+        {
+          "external_id": "ext:spotify:spotify:content:recent-tracks",
+          "category": "text",
+          "type": "select",
+          "min": 0,
+          "max": 1,
+          "option_values": ["none", "spotify:track:4uLU6hMCjMI75M1A2tKUQC"]
+        },
+        {
+          "external_id": "ext:spotify:spotify:content:favorites",
+          "category": "text",
+          "type": "select",
+          "min": 0,
+          "max": 1,
+          "option_values": ["none", "spotify:track:7ouMYWpwJ422jRcDASZB7P"]
+        }
+      ]
+    }
+  },
+  "manifest": {
+    "config_schema": [
+      "intro",
+      "client_id",
+      "client_secret",
+      "spotify_oauth",
+      "manual_callback",
+      "callback_url"
+    ],
+    "actions": ["complete_connection", "test_connection", "refresh_content", "disconnect"],
+    "widgets": [
+      {
+        "key": "now_playing",
+        "settings": ["device"],
+        "button_actions": [
+          "next",
+          "pause",
+          "play",
+          "play_item_1",
+          "play_item_2",
+          "play_item_3",
+          "play_item_4",
+          "previous"
+        ]
+      },
+      {
+        "key": "quick_play",
+        "settings": ["device", "item_1", "item_2", "item_3", "item_4"],
+        "button_actions": [
+          "next",
+          "pause",
+          "play",
+          "play_item_1",
+          "play_item_2",
+          "play_item_3",
+          "play_item_4",
+          "previous"
+        ]
+      },
+      {
+        "key": "recently_played",
+        "settings": ["count"],
+        "button_actions": [
+          "next",
+          "pause",
+          "play",
+          "play_item_1",
+          "play_item_2",
+          "play_item_3",
+          "play_item_4",
+          "previous"
+        ]
+      }
+    ],
+    "scene_triggers": [],
+    "scene_actions": []
+  }
+}
