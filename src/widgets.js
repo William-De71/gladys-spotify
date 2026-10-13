@@ -50,7 +50,7 @@ export const RECENT_COUNT = { min: 1, max: 8, default: 5 };
 const FOCAL_IMAGE_MIN_WIDTH = 600;
 const THUMBNAIL_MIN_WIDTH = 250;
 
-const STRINGS = {
+export const STRINGS = {
   en: {
     notConnected:
       'Spotify is not connected. Open the integration configuration and click "Connect with Spotify".',

@@ -17,7 +17,7 @@
   <rect x="330" y="40" width="220" height="110" rx="10" fill="#fff8e6" stroke="#bf8700" stroke-width="1.5"/>
   <text x="440" y="80" text-anchor="middle" font-size="16" font-weight="600" fill="#6b4600">Spotify integration</text>
   <text x="440" y="104" text-anchor="middle" font-size="12" fill="#24292f">its own container,</text>
-  <text x="440" y="122" text-anchor="middle" font-size="12" fill="#24292f">tokens kept in /data</text>
+  <text x="440" y="122" text-anchor="middle" font-size="12" fill="#24292f">tokens in the Gladys config</text>
 
   <!-- Spotify cloud -->
   <rect x="650" y="40" width="200" height="110" rx="10" fill="#edfbf1" stroke="#1db954" stroke-width="1.5"/>

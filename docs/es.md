@@ -10,6 +10,7 @@ Esta integración le permite controlar sus dispositivos **Spotify Connect** desd
 - **Estado de reproducción**: Gladys refleja en tiempo real si un dispositivo está reproduciendo o en pausa.
 - **Dispositivo «Spotify»**: un dispositivo aparte y único contiene tres listas — listas de reproducción, canciones recientes y favoritos. Elegir una opción ahí no reproduce nada: solo se guarda como selección pendiente, y el botón de reproducción de cualquier dispositivo Spotify Connect la inicia en cuanto se pulsa.
 - **Widgets del panel**: reproducción en curso con portada y controles, inicio rápido de sus listas/álbumes favoritos, canciones escuchadas recientemente.
+- **Escenas**: inicie una escena cuando la reproducción empieza, se detiene o cambia de canción, y reproduzca, pause o lea lo que suena desde una escena.
 - **Acciones**: probar la conexión, finalizar una conexión manualmente, actualizar las listas/canciones recientes/favoritos y desconectar, directamente desde la pantalla de configuración. Para volver a autorizar, basta con hacer clic de nuevo en «Conectar con Spotify».
 
 ## Requisitos
@@ -88,6 +89,8 @@ Si, al volver de Spotify, su navegador muestra una **página de error** («no se
 
 La API de Spotify solo devuelve los dispositivos **conectados en ese momento** (aplicación de Spotify abierta, altavoz encendido y conectado). Si un dispositivo no aparece, abra Spotify en él y vuelva a lanzar una búsqueda.
 
+Cada dispositivo Spotify Connect muestra una insignia **Nube** mientras Spotify funciona en él, e **Inaccesible** cuando está desconectado (se comprueba cada minuto): un comando enviado falla hasta que Spotify se vuelva a abrir en él.
+
 ## El dispositivo «Spotify»: listas, canciones recientes y favoritos
 
 Además de sus dispositivos Spotify Connect, la integración crea un dispositivo aparte y único llamado **«Spotify»**. Contiene tres listas independientes:
@@ -121,6 +124,34 @@ La integración ofrece tres widgets, que se añaden desde la edición del panel 
 Los botones de los widgets actúan directamente sobre el dispositivo indicado: no usan la selección pendiente del dispositivo «Spotify». Como en el resto de la integración, se necesita una cuenta **Premium** para los comandos de reproducción.
 
 > ℹ️ Algunas listas editoriales de Spotify («Today's Top Hits», Daily Mix…) ya no son legibles para las aplicaciones de terceros: su nombre y su portada pueden faltar en el inicio rápido (el widget muestra «Lista 1»…), y Spotify puede rechazar su reproducción.
+
+![Ilustración de los tres widgets en español: reproducción actual con portada y botones, inicio rápido con cuatro portadas, canciones recientes (ilustración generada, no una captura de pantalla)](https://raw.githubusercontent.com/William-De71/gladys-spotify/main/docs/assets/widgets.es.png)
+
+## Escenas
+
+Requiere Gladys 5.1.0 o posterior, como los widgets.
+
+### Disparadores
+
+Se comprueban en cada lectura de la reproducción (cada 15 segundos), un evento por cambio. Cada disparador puede limitarse a un **dispositivo Spotify Connect** (déjelo vacío para cualquiera).
+
+| Disparador                     | Cuándo                                                                                       | Variables                                            |
+| ------------------------------ | -------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Spotify: reproducción iniciada | Un dispositivo empieza a reproducir (o la reproducción pasa a él)                            | dispositivo, título, artistas, álbum, URI de Spotify |
+| Spotify: reproducción detenida | Un dispositivo que reproducía se pausa, se detiene o la reproducción pasa a otro dispositivo | las mismas, sobre lo que se detuvo                   |
+| Spotify: cambio de canción     | Un dispositivo sigue reproduciendo, pero otra canción u otro episodio                        | las mismas, sobre la nueva canción                   |
+
+Ejemplo: _cuando la reproducción empieza en «Salón», bajar las luces del salón_. No se dispara nada al iniciar la integración, y los cambios provocados por las acciones de escena de esta integración nunca activan estos disparadores: una escena no puede entrar en bucle a través de Spotify. Un cambio de menos de 15 segundos puede pasar desapercibido.
+
+### Acciones
+
+| Acción              | Parámetros                                                                                                               | Resultados para las siguientes acciones                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Spotify: reproducir | Enlace o URI de Spotify (lista, álbum, artista o canción, variables de escena admitidas), dispositivo (vacío: el activo) | dispositivo, URI de Spotify                                                      |
+| Spotify: pausar     | Dispositivo (vacío: lo que suena)                                                                                        | dispositivo, estaba sonando                                                      |
+| Spotify: qué suena  | —                                                                                                                        | sonando, dispositivo, título, artistas, álbum, URI de Spotify, volumen (0 a 100) |
+
+Ejemplo: _a las 7:00 entre semana, reproducir la lista «Mañana» en el altavoz de la cocina_, o _al salir de casa, pausar Spotify_. Pausar un dispositivo que no suena no hace nada y tiene éxito. El dispositivo elegido debe estar conectado (Spotify abierto en él).
 
 ## Solución de problemas
 

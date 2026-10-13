@@ -10,6 +10,7 @@ Mit dieser Integration steuern Sie Ihre **Spotify-Connect**-Geräte aus Gladys A
 - **Wiedergabestatus**: Gladys zeigt in Echtzeit an, ob ein Gerät abspielt oder pausiert ist.
 - **Gerät „Spotify“**: Ein separates, einzelnes Gerät enthält drei Listen — Playlists, zuletzt gehörte Titel, Favoriten. Die Auswahl einer Option startet dort nichts: Sie wird nur als ausstehende Auswahl gemerkt, und die Wiedergabetaste eines beliebigen Spotify-Connect-Geräts startet sie, sobald sie gedrückt wird.
 - **Dashboard-Widgets**: aktuelle Wiedergabe mit Cover und Bedienelementen, Schnellstart Ihrer Lieblings-Playlists/-Alben, zuletzt gehörte Titel.
+- **Szenen**: eine Szene starten, wenn die Wiedergabe beginnt, stoppt oder der Titel wechselt, und aus einer Szene abspielen, pausieren oder die aktuelle Wiedergabe lesen.
 - **Aktionen**: Verbindung testen, eine Verbindung manuell abschließen, Playlists/zuletzt gehörte Titel/Favoriten aktualisieren und trennen, direkt im Konfigurationsbildschirm. Für eine erneute Autorisierung klicken Sie einfach noch einmal auf „Mit Spotify verbinden“.
 
 ## Voraussetzungen
@@ -88,6 +89,8 @@ Zeigt Ihr Browser bei der Rückkehr von Spotify eine **Fehlerseite** („Diese W
 
 Die Spotify-API liefert nur Geräte, die **gerade online** sind (Spotify-App geöffnet, Lautsprecher eingeschaltet und verbunden). Erscheint ein Gerät nicht, öffnen Sie Spotify darauf und starten Sie die Suche erneut.
 
+Jedes Spotify-Connect-Gerät zeigt ein **Cloud**-Abzeichen, solange Spotify darauf läuft, und **Nicht erreichbar**, sobald es offline ist (jede Minute geprüft): Ein Befehl an das Gerät schlägt dann fehl, bis Spotify darauf wieder geöffnet ist.
+
 ## Das Gerät „Spotify“: Playlists, zuletzt gehörte Titel und Favoriten
 
 Zusätzlich zu Ihren Spotify-Connect-Geräten erstellt die Integration ein separates, einzelnes Gerät namens **„Spotify“**. Es enthält drei unabhängige Listen:
@@ -121,6 +124,34 @@ Die Integration bietet drei Widgets, die Sie im Dashboard-Editor hinzufügen (Bl
 Die Tasten der Widgets wirken direkt auf das angezeigte Gerät: Sie verwenden nicht die ausstehende Auswahl des Geräts „Spotify“. Wie für den Rest der Integration ist für Wiedergabebefehle ein **Premium**-Konto erforderlich.
 
 > ℹ️ Einige redaktionelle Spotify-Playlists („Today's Top Hits“, Daily Mix…) sind für Drittanwendungen nicht mehr lesbar: Name und Cover können dann im Schnellstart fehlen (das Widget zeigt „Playlist 1“…), und Spotify kann ihre Wiedergabe ablehnen.
+
+![Illustration der drei Widgets auf Deutsch: aktuelle Wiedergabe mit Cover und Tasten, Schnellstart mit vier Covern, zuletzt gehörte Titel (generierte Illustration, kein Screenshot)](https://raw.githubusercontent.com/William-De71/gladys-spotify/main/docs/assets/widgets.de.png)
+
+## Szenen
+
+Erfordert Gladys 5.1.0 oder neuer, wie die Widgets.
+
+### Auslöser
+
+Bei jedem Lesen der Wiedergabe geprüft (alle 15 Sekunden), ein Ereignis pro Änderung. Jeder Auslöser kann auf ein **Spotify-Connect-Gerät** beschränkt werden (leer lassen für alle Geräte).
+
+| Auslöser                      | Wann                                                                                             | Variablen                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| Spotify: Wiedergabe gestartet | Ein Gerät beginnt zu spielen (oder die Wiedergabe wechselt zu ihm)                               | Gerät, Titel, Künstler, Album, Spotify-URI |
+| Spotify: Wiedergabe gestoppt  | Ein spielendes Gerät wird pausiert, gestoppt oder die Wiedergabe wechselt zu einem anderen Gerät | dieselben, zu dem, was gestoppt wurde      |
+| Spotify: Titel gewechselt     | Ein Gerät spielt weiter, aber einen anderen Titel oder eine andere Episode                       | dieselben, zum neuen Titel                 |
+
+Beispiel: _wenn die Wiedergabe auf „Wohnzimmer“ startet, das Licht im Wohnzimmer dimmen_. Beim Start der Integration wird nichts ausgelöst, und Änderungen durch die Szenenaktionen dieser Integration lösen diese Auslöser nie aus: Eine Szene kann nicht über Spotify in eine Schleife geraten. Eine Änderung von weniger als 15 Sekunden kann unbemerkt bleiben.
+
+### Aktionen
+
+| Aktion                       | Parameter                                                                                                        | Ergebnisse für die nächsten Aktionen                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Spotify: abspielen           | Spotify-Link oder -URI (Playlist, Album, Künstler oder Titel, Szenenvariablen erlaubt), Gerät (leer: das aktive) | Gerät, Spotify-URI                                                         |
+| Spotify: pausieren           | Gerät (leer: was gerade spielt)                                                                                  | Gerät, spielte                                                             |
+| Spotify: aktuelle Wiedergabe | —                                                                                                                | spielt, Gerät, Titel, Künstler, Album, Spotify-URI, Lautstärke (0 bis 100) |
+
+Beispiel: _werktags um 7:00 die Playlist „Morgen“ auf dem Küchenlautsprecher abspielen_, oder _wenn ich das Haus verlasse, Spotify pausieren_. Ein Gerät zu pausieren, das nicht spielt, bewirkt nichts und gelingt. Das gewählte Gerät muss online sein (Spotify darauf geöffnet).
 
 ## Fehlerbehebung
 
