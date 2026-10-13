@@ -11,7 +11,7 @@
   "version": "1.4.1",
   "docker_image": "ghcr.io/william-de71/gladys-spotify:1.4.1",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/William-De71/gladys-spotify/master/cover.jpg",
+  "cover_image": "https://raw.githubusercontent.com/William-De71/gladys-spotify/main/cover.jpg",
   "categories": ["multimedia"],
   "transports": ["cloud"],
   "config_schema": [
@@ -359,6 +359,552 @@
             "fr": "Titres affichés",
             "de": "Angezeigte Titel",
             "es": "Canciones mostradas"
+          }
+        }
+      ]
+    }
+  ],
+  "scene_triggers": [
+    {
+      "key": "playback_started",
+      "label": {
+        "en": "Spotify: playback started",
+        "fr": "Spotify : lecture démarrée",
+        "de": "Spotify: Wiedergabe gestartet",
+        "es": "Spotify: reproducción iniciada"
+      },
+      "description": {
+        "en": "A device starts playing. Checked every 15 seconds.",
+        "fr": "Un appareil commence à jouer. Vérifié toutes les 15 secondes.",
+        "de": "Ein Gerät beginnt zu spielen. Alle 15 Sekunden geprüft.",
+        "es": "Un dispositivo empieza a reproducir. Se comprueba cada 15 segundos."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Spotify Connect device",
+            "fr": "Appareil Spotify Connect",
+            "de": "Spotify-Connect-Gerät",
+            "es": "Dispositivo Spotify Connect"
+          },
+          "description": {
+            "en": "Leave empty for any device.",
+            "fr": "Laissez vide pour tous les appareils.",
+            "de": "Leer lassen für alle Geräte.",
+            "es": "Déjelo vacío para cualquier dispositivo."
+          },
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          },
+          "description": {
+            "en": "Track or episode title.",
+            "fr": "Titre du morceau ou de l’épisode.",
+            "de": "Titel des Songs oder der Episode.",
+            "es": "Título de la canción o del episodio."
+          }
+        },
+        {
+          "key": "artists",
+          "type": "string",
+          "label": {
+            "en": "Artists",
+            "fr": "Artistes",
+            "de": "Künstler",
+            "es": "Artistas"
+          },
+          "description": {
+            "en": "Artists of the track, or the podcast of an episode.",
+            "fr": "Artistes du morceau, ou podcast de l’épisode.",
+            "de": "Künstler des Songs oder Podcast der Episode.",
+            "es": "Artistas de la canción, o pódcast del episodio."
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
+        },
+        {
+          "key": "uri",
+          "type": "string",
+          "label": {
+            "en": "Spotify URI",
+            "fr": "URI Spotify",
+            "de": "Spotify-URI",
+            "es": "URI de Spotify"
+          }
+        }
+      ]
+    },
+    {
+      "key": "playback_stopped",
+      "label": {
+        "en": "Spotify: playback stopped",
+        "fr": "Spotify : lecture arrêtée",
+        "de": "Spotify: Wiedergabe gestoppt",
+        "es": "Spotify: reproducción detenida"
+      },
+      "description": {
+        "en": "A device that was playing is paused, stopped or moved to another device.",
+        "fr": "Un appareil qui jouait est mis en pause, arrêté ou la lecture passe sur un autre appareil.",
+        "de": "Ein spielendes Gerät wird pausiert, gestoppt oder die Wiedergabe wechselt das Gerät.",
+        "es": "Un dispositivo que reproducía se pausa, se detiene o la reproducción pasa a otro dispositivo."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Spotify Connect device",
+            "fr": "Appareil Spotify Connect",
+            "de": "Spotify-Connect-Gerät",
+            "es": "Dispositivo Spotify Connect"
+          },
+          "description": {
+            "en": "Leave empty for any device.",
+            "fr": "Laissez vide pour tous les appareils.",
+            "de": "Leer lassen für alle Geräte.",
+            "es": "Déjelo vacío para cualquier dispositivo."
+          },
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          },
+          "description": {
+            "en": "Track or episode title.",
+            "fr": "Titre du morceau ou de l’épisode.",
+            "de": "Titel des Songs oder der Episode.",
+            "es": "Título de la canción o del episodio."
+          }
+        },
+        {
+          "key": "artists",
+          "type": "string",
+          "label": {
+            "en": "Artists",
+            "fr": "Artistes",
+            "de": "Künstler",
+            "es": "Artistas"
+          },
+          "description": {
+            "en": "Artists of the track, or the podcast of an episode.",
+            "fr": "Artistes du morceau, ou podcast de l’épisode.",
+            "de": "Künstler des Songs oder Podcast der Episode.",
+            "es": "Artistas de la canción, o pódcast del episodio."
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
+        },
+        {
+          "key": "uri",
+          "type": "string",
+          "label": {
+            "en": "Spotify URI",
+            "fr": "URI Spotify",
+            "de": "Spotify-URI",
+            "es": "URI de Spotify"
+          }
+        }
+      ]
+    },
+    {
+      "key": "track_changed",
+      "label": {
+        "en": "Spotify: track changed",
+        "fr": "Spotify : nouveau titre",
+        "de": "Spotify: Titel gewechselt",
+        "es": "Spotify: cambio de canción"
+      },
+      "description": {
+        "en": "A device keeps playing, but another track or episode.",
+        "fr": "Un appareil continue de jouer, mais un autre titre ou épisode.",
+        "de": "Ein Gerät spielt weiter, aber einen anderen Titel oder eine andere Episode.",
+        "es": "Un dispositivo sigue reproduciendo, pero otra canción u otro episodio."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Spotify Connect device",
+            "fr": "Appareil Spotify Connect",
+            "de": "Spotify-Connect-Gerät",
+            "es": "Dispositivo Spotify Connect"
+          },
+          "description": {
+            "en": "Leave empty for any device.",
+            "fr": "Laissez vide pour tous les appareils.",
+            "de": "Leer lassen für alle Geräte.",
+            "es": "Déjelo vacío para cualquier dispositivo."
+          },
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          },
+          "description": {
+            "en": "Track or episode title.",
+            "fr": "Titre du morceau ou de l’épisode.",
+            "de": "Titel des Songs oder der Episode.",
+            "es": "Título de la canción o del episodio."
+          }
+        },
+        {
+          "key": "artists",
+          "type": "string",
+          "label": {
+            "en": "Artists",
+            "fr": "Artistes",
+            "de": "Künstler",
+            "es": "Artistas"
+          },
+          "description": {
+            "en": "Artists of the track, or the podcast of an episode.",
+            "fr": "Artistes du morceau, ou podcast de l’épisode.",
+            "de": "Künstler des Songs oder Podcast der Episode.",
+            "es": "Artistas de la canción, o pódcast del episodio."
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
+        },
+        {
+          "key": "uri",
+          "type": "string",
+          "label": {
+            "en": "Spotify URI",
+            "fr": "URI Spotify",
+            "de": "Spotify-URI",
+            "es": "URI de Spotify"
+          }
+        }
+      ]
+    }
+  ],
+  "scene_actions": [
+    {
+      "key": "play",
+      "label": {
+        "en": "Spotify: play",
+        "fr": "Spotify : lancer la lecture",
+        "de": "Spotify: abspielen",
+        "es": "Spotify: reproducir"
+      },
+      "description": {
+        "en": "Start a playlist, album, artist or track on a device.",
+        "fr": "Lancer une playlist, un album, un artiste ou un titre sur un appareil.",
+        "de": "Eine Playlist, ein Album, einen Künstler oder einen Titel auf einem Gerät starten.",
+        "es": "Iniciar una lista, un álbum, un artista o una canción en un dispositivo."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "uri",
+          "type": "string",
+          "label": {
+            "en": "Spotify link",
+            "fr": "Lien Spotify",
+            "de": "Spotify-Link",
+            "es": "Enlace de Spotify"
+          },
+          "description": {
+            "en": "The \"Share\" link (https://open.spotify.com/...) or the spotify: URI.",
+            "fr": "Le lien « Partager » (https://open.spotify.com/...) ou l’URI spotify:.",
+            "de": "Der „Teilen“-Link (https://open.spotify.com/...) oder die spotify:-URI.",
+            "es": "El enlace «Compartir» (https://open.spotify.com/...) o la URI spotify:."
+          },
+          "placeholder": {
+            "en": "https://open.spotify.com/playlist/...",
+            "fr": "https://open.spotify.com/playlist/...",
+            "de": "https://open.spotify.com/playlist/...",
+            "es": "https://open.spotify.com/playlist/..."
+          },
+          "required": true
+        },
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Spotify Connect device",
+            "fr": "Appareil Spotify Connect",
+            "de": "Spotify-Connect-Gerät",
+            "es": "Dispositivo Spotify Connect"
+          },
+          "description": {
+            "en": "Leave empty for the active device.",
+            "fr": "Laissez vide pour l’appareil actif.",
+            "de": "Leer lassen für das aktive Gerät.",
+            "es": "Déjelo vacío para el dispositivo activo."
+          },
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
+          }
+        },
+        {
+          "key": "uri",
+          "type": "string",
+          "label": {
+            "en": "Spotify URI",
+            "fr": "URI Spotify",
+            "de": "Spotify-URI",
+            "es": "URI de Spotify"
+          }
+        }
+      ]
+    },
+    {
+      "key": "pause",
+      "label": {
+        "en": "Spotify: pause",
+        "fr": "Spotify : mettre en pause",
+        "de": "Spotify: pausieren",
+        "es": "Spotify: pausar"
+      },
+      "description": {
+        "en": "Pause a device, or whatever is playing. Nothing happens if it is not playing.",
+        "fr": "Mettre en pause un appareil, ou ce qui joue. Sans effet si rien ne joue.",
+        "de": "Ein Gerät pausieren, oder was gerade spielt. Ohne Wirkung, wenn nichts spielt.",
+        "es": "Pausar un dispositivo, o lo que suena. Sin efecto si no suena nada."
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Spotify Connect device",
+            "fr": "Appareil Spotify Connect",
+            "de": "Spotify-Connect-Gerät",
+            "es": "Dispositivo Spotify Connect"
+          },
+          "description": {
+            "en": "Leave empty for the active device.",
+            "fr": "Laissez vide pour l’appareil actif.",
+            "de": "Leer lassen für das aktive Gerät.",
+            "es": "Déjelo vacío para el dispositivo activo."
+          },
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
+          }
+        },
+        {
+          "key": "was_playing",
+          "type": "boolean",
+          "label": {
+            "en": "Was playing",
+            "fr": "Était en lecture",
+            "de": "Spielte",
+            "es": "Estaba sonando"
+          }
+        }
+      ]
+    },
+    {
+      "key": "get_playback",
+      "label": {
+        "en": "Spotify: what is playing",
+        "fr": "Spotify : lecture en cours",
+        "de": "Spotify: aktuelle Wiedergabe",
+        "es": "Spotify: qué suena"
+      },
+      "description": {
+        "en": "Read the track, the device and the volume, to use in the next actions.",
+        "fr": "Lire le titre, l’appareil et le volume, pour les actions suivantes.",
+        "de": "Titel, Gerät und Lautstärke lesen, für die nächsten Aktionen.",
+        "es": "Leer la canción, el dispositivo y el volumen, para las siguientes acciones."
+      },
+      "timeout_seconds": 15,
+      "outputs": [
+        {
+          "key": "is_playing",
+          "type": "boolean",
+          "label": {
+            "en": "Playing",
+            "fr": "En lecture",
+            "de": "Spielt",
+            "es": "Sonando"
+          }
+        },
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          },
+          "description": {
+            "en": "Track or episode title.",
+            "fr": "Titre du morceau ou de l’épisode.",
+            "de": "Titel des Songs oder der Episode.",
+            "es": "Título de la canción o del episodio."
+          }
+        },
+        {
+          "key": "artists",
+          "type": "string",
+          "label": {
+            "en": "Artists",
+            "fr": "Artistes",
+            "de": "Künstler",
+            "es": "Artistas"
+          },
+          "description": {
+            "en": "Artists of the track, or the podcast of an episode.",
+            "fr": "Artistes du morceau, ou podcast de l’épisode.",
+            "de": "Künstler des Songs oder Podcast der Episode.",
+            "es": "Artistas de la canción, o pódcast del episodio."
+          }
+        },
+        {
+          "key": "album",
+          "type": "string",
+          "label": {
+            "en": "Album",
+            "fr": "Album",
+            "de": "Album",
+            "es": "Álbum"
+          }
+        },
+        {
+          "key": "uri",
+          "type": "string",
+          "label": {
+            "en": "Spotify URI",
+            "fr": "URI Spotify",
+            "de": "Spotify-URI",
+            "es": "URI de Spotify"
+          }
+        },
+        {
+          "key": "volume",
+          "type": "number",
+          "label": {
+            "en": "Volume",
+            "fr": "Volume",
+            "de": "Lautstärke",
+            "es": "Volumen"
+          },
+          "description": {
+            "en": "From 0 to 100.",
+            "fr": "De 0 à 100.",
+            "de": "Von 0 bis 100.",
+            "es": "De 0 a 100."
           }
         }
       ]
