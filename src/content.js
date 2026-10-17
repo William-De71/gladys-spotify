@@ -36,6 +36,33 @@ export function trackValue(trackId) {
 }
 
 /**
+ * Normalise a name coming from Spotify before it goes into an option label:
+ * Spotify keeps whatever the owner typed (leading/trailing spaces, line breaks,
+ * double spaces), but the Gladys core refuses the whole devices batch when a
+ * `supported_options[].label` has leading or trailing whitespace - one badly
+ * named playlist or track would otherwise prevent every device from being
+ * created.
+ * @param {*} text - A raw name (string, or null/undefined).
+ * @returns {string} The name with whitespace collapsed and trimmed.
+ */
+export function cleanName(text) {
+  return String(text ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Build an option label "<prefix> — <name>", trimmed as a whole so an empty
+ * name can never leave a trailing space either.
+ * @param {string} prefix - One of CONTENT_LABEL_PREFIX.
+ * @param {string} name - The already-cleaned display name.
+ * @returns {string} The label.
+ */
+function optionLabel(prefix, name) {
+  return `${prefix} — ${name}`.trim();
+}
+
+/**
  * Turn a raw Spotify playlist into a select option.
  * Playlists with a null `name` (Spotify can return one for a playlist the
  * user no longer has access to) are skipped by the caller before this runs.
@@ -46,7 +73,7 @@ export function trackValue(trackId) {
 export function playlistToOption(playlist, index) {
   return {
     value: playlistValue(playlist.id),
-    label: `${CONTENT_LABEL_PREFIX.PLAYLIST} — ${playlist.name}`,
+    label: optionLabel(CONTENT_LABEL_PREFIX.PLAYLIST, cleanName(playlist.name)),
     sort_order: index + 1,
   };
 }
@@ -57,8 +84,12 @@ export function playlistToOption(playlist, index) {
  * @returns {string} The track's display name.
  */
 function trackDisplayName(track) {
-  const artists = (track.artists || []).map((artist) => artist.name).join(', ');
-  return artists ? `${artists} — ${track.name}` : track.name;
+  const artists = (track.artists || [])
+    .map((artist) => cleanName(artist.name))
+    .filter(Boolean)
+    .join(', ');
+  const name = cleanName(track.name);
+  return artists ? `${artists} — ${name}` : name;
 }
 
 /**
@@ -70,7 +101,7 @@ function trackDisplayName(track) {
 export function recentTrackToOption(item, index) {
   return {
     value: trackValue(item.track.id),
-    label: `${CONTENT_LABEL_PREFIX.RECENT} — ${trackDisplayName(item.track)}`,
+    label: optionLabel(CONTENT_LABEL_PREFIX.RECENT, trackDisplayName(item.track)),
     sort_order: index + 1,
   };
 }
@@ -84,7 +115,7 @@ export function recentTrackToOption(item, index) {
 export function favoriteToOption(item, index) {
   return {
     value: trackValue(item.track.id),
-    label: `${CONTENT_LABEL_PREFIX.FAVORITE} — ${trackDisplayName(item.track)}`,
+    label: optionLabel(CONTENT_LABEL_PREFIX.FAVORITE, trackDisplayName(item.track)),
     sort_order: index + 1,
   };
 }
