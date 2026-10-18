@@ -5,6 +5,7 @@ import {
   playlistValue,
   trackValue,
   playlistToOption,
+  cleanName,
   recentTrackToOption,
   favoriteToOption,
   notSelectedOption,
@@ -168,4 +169,26 @@ test('parseContentValue recognizes spotify:playlist:... and spotify:track:... UR
 test('parseContentValue throws on an unrecognized value', () => {
   assert.throws(() => parseContentValue('spotify:album:abc'), /Unrecognized Spotify content value/);
   assert.throws(() => parseContentValue(''), /Unrecognized Spotify content value/);
+});
+
+test('cleanName collapses and trims whitespace, tolerates null', () => {
+  assert.equal(cleanName('  Chill   du\n soir  '), 'Chill du soir');
+  assert.equal(cleanName(null), '');
+  assert.equal(cleanName(undefined), '');
+});
+
+test('option labels never have leading or trailing whitespace (Gladys rejects the batch otherwise)', () => {
+  const labels = [
+    playlistToOption({ id: 'p1', name: 'Chill ' }, 0).label,
+    playlistToOption({ id: 'p2', name: '   ' }, 1).label,
+    recentTrackToOption(
+      { track: { id: 't1', name: ' Track ', artists: [{ name: ' Artist ' }] } },
+      0,
+    ).label,
+    favoriteToOption({ track: { id: 't2', name: 'Track\n', artists: [{ name: '' }] } }, 0).label,
+  ];
+  for (const label of labels) assert.equal(label, label.trim());
+  assert.equal(labels[0], 'Playlist — Chill');
+  assert.equal(labels[2], 'Récent — Artist — Track');
+  assert.equal(labels[3], 'Favori — Track');
 });
