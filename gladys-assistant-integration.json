@@ -13,6 +13,17 @@
   "gladys_version": ">=5.3.0",
   "cover_image": "https://raw.githubusercontent.com/William-De71/gladys-spotify/main/cover.jpg",
   "categories": ["multimedia"],
+  "keywords": [
+    "Spotify Connect",
+    "musique",
+    "music",
+    "streaming",
+    "playlist",
+    "enceinte",
+    "speaker",
+    "podcast",
+    "lecteur audio"
+  ],
   "transports": ["cloud"],
   "music": {
     "browse": true,

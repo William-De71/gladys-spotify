@@ -57,6 +57,20 @@ test('the catalog description and the widget labels fit the store limits', () =>
   }
 });
 
+test('the catalog keywords fit the store rules, worldwide (Gladys 5.3.0)', () => {
+  assert.equal(manifest.gladys_version, '>=5.3.0');
+  const { keywords } = manifest;
+  assert.ok(Array.isArray(keywords) && keywords.length >= 1 && keywords.length <= 10);
+  for (const keyword of keywords) {
+    assert.ok(keyword.trim().length >= 2 && keyword.trim().length <= 30, keyword);
+  }
+  const normalized = keywords.map((keyword) => keyword.trim().toLowerCase());
+  assert.equal(new Set(normalized).size, normalized.length);
+  assert.ok(!normalized.includes(manifest.name.toLowerCase()));
+  // Spotify is available in most countries: no restriction declared.
+  assert.equal(manifest.countries, undefined);
+});
+
 test('every widget text exists in the four languages, with the same placeholders', () => {
   for (const [key, text] of Object.entries(STRINGS.en)) {
     for (const language of LANGUAGES) {
