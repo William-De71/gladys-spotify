@@ -10,6 +10,7 @@ This integration lets you control your **Spotify Connect** devices from Gladys A
 - **Playback state**: Gladys reflects in real time whether a device is playing or paused.
 - **"Spotify" device**: a separate, single device carries three lists — playlists, recent tracks, favorites. Picking an option there does not play anything: it is only remembered as a pending selection, and the play button of any Spotify Connect device launches it as soon as it is pressed.
 - **Dashboard widgets**: now playing with cover and controls, quick play of your favorite playlists/albums, recently played tracks.
+- **Music player** (Gladys 5.3): each Spotify Connect device in the dashboard music box, with cover, progress bar, shuffle, repeat, and your playlists, liked songs, search and queue.
 - **Scenes**: start a scene when playback starts, stops or the track changes, and play, pause or read what is playing from a scene.
 - **Actions**: test the connection, finish a connection by hand, refresh the playlists/recent tracks/favorites, and disconnect, directly from the configuration screen. To reauthorize, simply click "Connect with Spotify" again.
 
@@ -17,7 +18,7 @@ This integration lets you control your **Spotify Connect** devices from Gladys A
 
 - A **Spotify Premium account** (required: the Spotify API does not allow controlling playback with a free account).
 - A **Spotify application** created on the developer dashboard (free), to get a Client ID and a Client Secret.
-- Gladys Assistant 5.1.0 or later (dashboard widgets).
+- Gladys Assistant 5.3.0 or later (music player).
 
 ## Create your Spotify application
 
@@ -125,9 +126,25 @@ The widget buttons act directly on the device shown: they do not use the pending
 
 ![Illustration of the three widgets in English: now playing with its cover and buttons, quick play with four covers, recently played tracks (generated illustration, not a screenshot)](https://raw.githubusercontent.com/William-De71/gladys-spotify/main/docs/assets/widgets.en.png)
 
+## Music player
+
+Since Gladys 5.3, the dashboard **music** box turns each Spotify Connect device into a full player: cover, title, artist and album, a progress bar you can drag to seek, play/pause, previous/next, shuffle, repeat (off, all, one) and volume. What Spotify plays is read every 15 seconds, and a few seconds after each command.
+
+The box also opens a panel with:
+
+- **Browse**: three folders — **Playlists**, **Titres likés** (liked songs) and **Écoutés récemment** (recently played) — then the tracks of one of your playlists or of an album, or the albums of an artist. The folder names are fixed in French, like the lists of the "Spotify" device: Gladys does not send its language with these requests.
+- **Search**: tracks, artists, albums and playlists matching what you type.
+- **Queue**: what the active device plays next; tap an item to skip to it.
+
+Tapping an item replaces the current playback on that device. The same catalog feeds the core **Play music on a speaker** scene action.
+
+### Updating existing devices
+
+Devices created before this version keep working as before. To get the new features, open the **Discover** tab of the integration and click **Update** on each Spotify Connect device: title, artist, album, artwork, duration, position, shuffle and repeat are added, and the playback state becomes a play/pause control. Until then, the music box shows its classic buttons.
+
 ## Scenes
 
-Requires Gladys 5.1.0 or later, like the widgets.
+Besides the actions below, the core **Play music on a speaker** action (Gladys 5.3) plays any item of the catalog described in "Music player" on a Spotify Connect device.
 
 ### Triggers
 
@@ -167,3 +184,7 @@ Example: _at 7:00 on weekdays, play the "Morning" playlist on the kitchen speake
 - Up to 200 playlists, the last 50 recently played tracks and 200 favorites (Spotify's own limits, or limits set by the integration) are listed; beyond that, the extra ones are dropped (alphabetically for playlists) and logged, never silently.
 - Podcasts and locally stored files never appear in the "Spotify" device's lists.
 - The pending selection lives in memory only. If the integration restarts between picking an option and pressing Play, the select still shows the choice on the dashboard, but Play does a plain resume instead of launching it — pick it again if that happens.
+- The music player has no "play next", no "add to queue", no stop and no mute: the Spotify Web API only adds a single track at the end of the queue, and has pause but no stop or mute.
+- Search returns at most 10 results per type (Spotify's limit for a personal developer application).
+- The tracks of a playlist are listed only for your own and collaborative playlists; the others (followed, editorial) can still be played whole.
+- The queue is only known for the device playing right now, and skipping to an item sends as many "next" as there are items before it.

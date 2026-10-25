@@ -35,10 +35,12 @@ index.js                      SDK wiring only: createApp(new GladysIntegration()
 src/app.js                    every handler, registered before connect(); the tests drive
                               it with the fake Gladys of the SDK (test/app.test.js)
 src/SpotifyClient.js          Spotify Web API: PKCE, single-flight token refresh, calls
-src/devices.js                discovery, setValue, playback loop (15 s), content loop (20 min)
+src/devices.js                discovery, setValue, playback loop (15 s, now playing), content loop (20 min)
 src/convertToGladysDevice.js  one device per Spotify Connect device
 src/convertContentDevice.js   the "Spotify" content device (3 selects)
 src/content.js                playlists / recent / favorites -> select options
+src/music.js                  Gladys 5.3 music player: now-playing snapshot, browse / search /
+                              play / queue handlers, artwork served from Spotify's CDN
 src/events.js                 scene triggers, on playback transitions only
 src/sceneActions.js           play, pause, get_playback
 src/transport.js              Cloud / Unreachable badge of each device
@@ -61,15 +63,30 @@ src/widgetHandlers.js         widget handlers, caches, actions
   forum message.
 - **Polling**: no Gladys polling (`should_poll` absent); the playback loop
   runs its own 15 s timer.
-- **States**: `publishChangedStates` with a one-hour heartbeat, only for the
-  features of created devices (an unknown feature makes the core refuse the
-  batch). In `onDeviceCreated`: states again, transport badge, then
-  `requestWidgetRefresh`.
+- **States**: the playback loop publishes each player through the SDK's
+  `publishNowPlaying` (diff, one batch, the position only on a state or track
+  change or a seek, never on a timer), restricted to the features of the
+  created device (an unknown feature makes the core refuse the batch: a
+  device created before Gladys 5.3 only has `playback-state` and `volume`),
+  with a one-hour heartbeat (`forgetPublishedStates`). In `onDeviceCreated`:
+  states again, transport badge, then `requestWidgetRefresh`.
+- **Music player** (`music` field of the manifest): `browse`, `search` and
+  `queue` declared, `append: false` (the Web API only appends one track at
+  the end of the user's queue, no "play next", no context). The writable
+  `playback-state` keeps min 0 / max 1 and declares the 0/1 subset in
+  `supported_options` (no stop); no `mute` feature (none in the Web API).
+  Writable now-playing features are `has_feedback: true`: the loop's quick
+  re-reads (0.5 s and 3 s after a command) confirm them. MediaItem ids are
+  Spotify URIs or the `folder:*` ids of `BROWSE_FOLDERS`, stored in the core
+  `music.play-media` scene actions: forever too. Artwork keys come from the
+  SDK's `artworkKey` (300 px now playing, 64 px thumbnails) and only Spotify
+  CDN URLs are served.
 - **Scene events** on transitions only, flat scalar data, never at startup
   and never caused by a scene action of this integration (`events.quiet()`).
-- **Language**: Gladys does not send it with setValue or a scene action. The
-  option labels of the content device are fixed (`Playlist`, `Récent`,
-  `Favori`, a deliberate choice); everything a viewer reads in a widget
+- **Language**: Gladys does not send it with setValue, a scene action or a
+  music command. The option labels of the content device are fixed
+  (`Playlist`, `Récent`, `Favori`, a deliberate choice), and so are the
+  browse folder titles (`BROWSE_FOLDER_TITLES`); everything a viewer reads in a widget
   follows its language.
 - **The container rootfs is read-only**: the only state is the Gladys config
   (tokens, PKCE material). Never log a token or the Client Secret.

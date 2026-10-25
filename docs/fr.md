@@ -10,6 +10,7 @@ Cette intégration permet de contrôler vos appareils **Spotify Connect** depuis
 - **État de lecture** : Gladys reflète en temps réel si un appareil est en lecture ou en pause.
 - **Appareil « Spotify »** : un appareil séparé, unique, porte trois listes — playlists, morceaux récents, favoris. Choisir une option n'y lance rien : elle est simplement mémorisée comme sélection en attente, et le bouton lecture de n'importe quel appareil Spotify Connect la lance dès qu'on l'actionne.
 - **Widgets de tableau de bord** : lecture en cours avec pochette et commandes, lancement rapide de vos playlists/albums favoris, titres écoutés récemment.
+- **Lecteur de musique** (Gladys 5.3) : chaque appareil Spotify Connect dans la boîte musique du tableau de bord, avec pochette, barre de progression, aléatoire, répétition, et vos playlists, titres likés, la recherche et la file d’attente.
 - **Scènes** : déclenchez une scène quand la lecture démarre, s’arrête ou change de titre, et lancez, mettez en pause ou lisez la lecture en cours depuis une scène.
 - **Actions** : tester la connexion, terminer une connexion manuellement, actualiser les playlists/morceaux récents/favoris, et se déconnecter, directement depuis l'écran de configuration. Pour réautoriser, il suffit de cliquer à nouveau sur « Se connecter avec Spotify ».
 
@@ -17,7 +18,7 @@ Cette intégration permet de contrôler vos appareils **Spotify Connect** depuis
 
 - Un **compte Spotify Premium** (obligatoire : l'API Spotify ne permet pas de contrôler la lecture avec un compte gratuit).
 - Une **application Spotify** créée sur le tableau de bord développeur (gratuit), pour obtenir un Client ID et un Client Secret.
-- Gladys Assistant 5.1.0 ou supérieur (widgets de tableau de bord).
+- Gladys Assistant 5.3.0 ou supérieur (lecteur de musique).
 
 ## Créer votre application Spotify
 
@@ -125,9 +126,25 @@ Les boutons des widgets agissent directement sur l'appareil indiqué : ils n'uti
 
 ![Illustration des trois widgets en français : lecture en cours avec pochette et boutons, lancement rapide avec quatre pochettes, titres écoutés récemment (illustration générée, pas une capture d’écran)](https://raw.githubusercontent.com/William-De71/gladys-spotify/main/docs/assets/widgets.fr.png)
 
+## Lecteur de musique
+
+Depuis Gladys 5.3, la boîte **musique** du tableau de bord fait de chaque appareil Spotify Connect un vrai lecteur : pochette, titre, artiste et album, barre de progression que l'on fait glisser pour avancer, lecture/pause, précédent/suivant, aléatoire, répétition (non, tout, un titre) et volume. Ce que joue Spotify est relu toutes les 15 secondes, et quelques secondes après chaque commande.
+
+La boîte ouvre aussi un panneau avec :
+
+- **Parcourir** : trois dossiers — **Playlists**, **Titres likés** et **Écoutés récemment** — puis les titres d'une de vos playlists ou d'un album, ou les albums d'un artiste. Les noms des dossiers sont fixes, en français, comme les listes de l'appareil « Spotify » : Gladys n'envoie pas sa langue avec ces demandes.
+- **Rechercher** : titres, artistes, albums et playlists correspondant à ce que vous tapez.
+- **File d'attente** : ce que l'appareil actif joue ensuite ; un appui sur un élément y saute.
+
+Un appui sur un élément remplace la lecture en cours sur cet appareil. Le même catalogue alimente l'action de scène du cœur **Lancer une musique sur une enceinte**.
+
+### Mettre à jour les appareils existants
+
+Les appareils créés avant cette version continuent de fonctionner comme avant. Pour obtenir les nouvelles fonctionnalités, ouvrez l'onglet **Découverte** de l'intégration et cliquez sur **Mettre à jour** sur chaque appareil Spotify Connect : titre, artiste, album, pochette, durée, position, aléatoire et répétition sont ajoutés, et l'état de lecture devient une commande lecture/pause. D'ici là, la boîte musique affiche ses boutons classiques.
+
 ## Scènes
 
-Nécessite Gladys 5.1.0 ou plus récent, comme les widgets.
+En plus des actions ci-dessous, l'action du cœur **Lancer une musique sur une enceinte** (Gladys 5.3) lance n'importe quel élément du catalogue décrit dans « Lecteur de musique » sur un appareil Spotify Connect.
 
 ### Déclencheurs
 
@@ -167,3 +184,7 @@ Exemple : _à 7 h en semaine, lancer la playlist « Matin » sur l’enceinte de
 - Jusqu'à 200 playlists, les 50 derniers morceaux écoutés et 200 favoris (limites propres à Spotify ou fixées par l'intégration) sont listés ; au-delà, les éléments en trop sont retirés (par ordre alphabétique pour les playlists) et cette troncature est journalisée, jamais silencieuse.
 - Les podcasts et les fichiers stockés localement n'apparaissent jamais dans les listes de l'appareil « Spotify ».
 - La sélection en attente ne vit qu'en mémoire. Si l'intégration redémarre entre le choix d'une option et l'appui sur Play, le select affiche toujours le choix sur le tableau de bord, mais Play fait une simple reprise au lieu de le lancer — resélectionnez-le si ça arrive.
+- Le lecteur de musique n'a ni « lire ensuite », ni « ajouter à la file », ni arrêt, ni sourdine : l'API Web de Spotify n'ajoute qu'un seul titre à la fin de la file, et propose la pause mais ni arrêt ni sourdine.
+- La recherche renvoie au plus 10 résultats par type (la limite de Spotify pour une application de développeur personnelle).
+- Les titres d'une playlist ne sont listés que pour vos playlists et les playlists collaboratives ; les autres (suivies, éditoriales) se lancent quand même en entier.
+- La file d'attente n'est connue que pour l'appareil qui joue en ce moment, et sauter à un élément envoie autant de « suivant » qu'il y a d'éléments avant lui.

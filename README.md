@@ -3,7 +3,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/William-De71/gladys-spotify?sort=semver)](https://github.com/William-De71/gladys-spotify/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/William-De71/gladys-spotify/release.yml?branch=main&label=CI)](https://github.com/William-De71/gladys-spotify/actions/workflows/release.yml)
-[![Gladys](https://img.shields.io/badge/Gladys-%E2%89%A5%205.1.0-2f6fb5)](https://gladysassistant.com)
+[![Gladys](https://img.shields.io/badge/Gladys-%E2%89%A5%205.3.0-2f6fb5)](https://gladysassistant.com)
 
 ![Spotify for Gladys Assistant](cover.jpg)
 
@@ -29,6 +29,8 @@ User documentation, the one Gladys shows: [English](docs/en.md) · [Français](d
 - [Cloud badge](#cloud-badge)
 - [Scenes](#scenes)
 - [Dashboard widgets](#dashboard-widgets)
+- [Music player](#music-player)
+- [Updating from 1.5.x](#updating-from-15x)
 - [Updating from 1.4.x](#updating-from-14x)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
@@ -38,17 +40,18 @@ User documentation, the one Gladys shows: [English](docs/en.md) · [Français](d
 
 ## Features
 
-| Spotify                 | In Gladys                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------- |
-| Spotify Connect devices | One device per online device: play, pause, previous, next, volume, playing/paused state       |
-| Playlists and tracks    | A "Spotify" device with 3 selects (playlists, recent tracks, favorites) launched by Play      |
-| Playback changes        | Scene triggers: playback started, playback stopped, track changed                             |
-| Scene operations        | Scene actions: play a Spotify link on a device, pause, read what is playing                   |
-| Dashboard               | Widgets: now playing, quick play (4 links), recently played                                   |
-| Availability            | Cloud badge on each device, Unreachable while Spotify does not run on it                      |
-| Languages               | English, French, German and Spanish (configuration, messages, widgets, scenes, documentation) |
+| Spotify                 | In Gladys                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| Spotify Connect devices | One device per online device: play, pause, previous, next, volume, playing/paused state            |
+| Playlists and tracks    | A "Spotify" device with 3 selects (playlists, recent tracks, favorites) launched by Play           |
+| Playback changes        | Scene triggers: playback started, playback stopped, track changed                                  |
+| Scene operations        | Scene actions: play a Spotify link on a device, pause, read what is playing                        |
+| Dashboard               | Widgets: now playing, quick play (4 links), recently played                                        |
+| Music player            | Gladys 5.3 music box: cover, title, artist, progress, seek, shuffle, repeat, browse, search, queue |
+| Availability            | Cloud badge on each device, Unreachable while Spotify does not run on it                           |
+| Languages               | English, French, German and Spanish (configuration, messages, widgets, scenes, documentation)      |
 
-Requires **Gladys 5.1.0** or later and a **Spotify Premium** account: Spotify refuses playback commands from free
+Requires **Gladys 5.3.0** or later and a **Spotify Premium** account: Spotify refuses playback commands from free
 accounts.
 
 ## Architecture
@@ -108,7 +111,8 @@ sequenceDiagram
 
 Spotify pushes nothing: the integration reads the playback every 15 seconds on its own timer (no Gladys polling),
 publishes only the values that changed (re-sent once an hour) and the scene events on transitions. The content lists
-are read every 20 minutes and on demand, the online devices once a minute for the Cloud badge.
+are read every 20 minutes and on demand, the online devices once a minute for the Cloud badge. The music box of
+the dashboard asks for its lists (browse, search, queue) and the covers on demand: nothing is stored.
 
 ## Installation
 
@@ -149,10 +153,10 @@ marks the connection as revoked: nothing reaches Spotify until a new authorizati
 
 ## Devices
 
-| Device                           | Features                                                                        |
-| -------------------------------- | ------------------------------------------------------------------------------- |
-| Each Spotify Connect device      | `music` play, pause, previous, next, volume (0–100), playback state (read only) |
-| "Spotify" (one per installation) | `text` select × 3: playlists, recent tracks, favorites                          |
+| Device                           | Features                                                                                                                                                    |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Each Spotify Connect device      | `music` play, pause, previous, next, volume (0–100), playback state (play/pause), title, artist, album, artwork, duration, position (seek), shuffle, repeat |
+| "Spotify" (one per installation) | `text` select × 3: playlists, recent tracks, favorites                                                                                                      |
 
 Picking an option of the "Spotify" device never plays anything by itself: it becomes the **pending selection**, and the
 Play button of any Spotify Connect device launches it. Each option's value is a plain Spotify URI
@@ -197,6 +201,34 @@ on the kitchen speaker_; _when I leave home, pause Spotify_.
 - **Spotify recently played**: the 1 to 8 latest tracks, with cover and time, the current one badged.
 
 The image above is generated from the widget code by `docs/illustrations/render.sh`.
+
+## Music player
+
+With Gladys 5.3, each Spotify Connect device is a full music player in the dashboard **music** box: cover, title,
+artist and album, a progress bar you can drag to seek, play/pause, previous/next, shuffle, repeat (off, all, one) and
+volume. Its buttons open:
+
+| Panel  | Content                                                                                                                     |
+| ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Browse | "Playlists", "Titres likés" (liked songs), "Écoutés récemment" (recently played), then the tracks of a playlist or an album |
+| Search | Tracks, artists, albums and playlists (at most 10 per type: Spotify's limit for a personal app)                             |
+| Queue  | What the active device plays next; a tap skips to it                                                                        |
+
+A tap on a result replaces the current playback; the core **Play music on a speaker** scene action uses the same catalog. The
+names of the three folders are fixed in French, like the option prefixes of the "Spotify" device: Gladys sends no
+language with these requests.
+
+Spotify limits: no "play next" or "add to queue" (the Web API only appends a single track at the end of the queue,
+so the manifest declares `append: false`), no stop (pause only) and no mute; the tracks of a playlist are listed
+only for your own or collaborative playlists (the others are played whole); the queue exists only on the active
+device. The covers are Spotify's 300 px and 64 px images, served by the integration, never loaded by the browser.
+
+## Updating from 1.5.x
+
+Requires **Gladys 5.3.0**. Devices, settings, widgets and scenes are kept as they are, and the existing buttons keep
+working. To get the new music player features, open the **Discover** tab of the integration and click **Update** on
+each Spotify Connect device: it adds title, artist, album, artwork, duration, position, shuffle and repeat, and makes
+the playback state writable (play/pause). Until then, the music box shows its classic controls.
 
 ## Updating from 1.4.x
 

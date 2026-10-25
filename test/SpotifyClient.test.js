@@ -311,3 +311,79 @@ test('setVolume clamps the volume to 0-100', async () => {
   assert.match(urls[0], /volume_percent=100&/);
   assert.match(urls[1], /volume_percent=0&/);
 });
+
+test('the music commands: shuffle, repeat, seek', async () => {
+  const client = connectedClient();
+  const calls = [];
+  const restore = stubFetch(async (url, options) => {
+    calls.push([options.method, String(url)]);
+    return new Response(null, { status: 204 });
+  });
+  try {
+    await client.setShuffle('dev', true);
+    await client.setShuffle('dev', false);
+    await client.setRepeat('dev', 'track');
+    await client.seek('dev', 61.4);
+    await client.seek('dev', -3);
+  } finally {
+    restore();
+  }
+  assert.deepEqual(calls, [
+    ['PUT', 'https://api.spotify.com/v1/me/player/shuffle?state=true&device_id=dev'],
+    ['PUT', 'https://api.spotify.com/v1/me/player/shuffle?state=false&device_id=dev'],
+    ['PUT', 'https://api.spotify.com/v1/me/player/repeat?state=track&device_id=dev'],
+    ['PUT', 'https://api.spotify.com/v1/me/player/seek?position_ms=61400&device_id=dev'],
+    ['PUT', 'https://api.spotify.com/v1/me/player/seek?position_ms=0&device_id=dev'],
+  ]);
+});
+
+test('the music reads: queue, user id (read once), catalog pages, search', async () => {
+  const client = connectedClient();
+  const urls = [];
+  const bodies = {
+    '/me/player/queue': { currently_playing: { uri: 'a' }, queue: [{ uri: 'b' }, null] },
+    '/me': { id: 'me' },
+  };
+  const restore = stubFetch(async (url) => {
+    urls.push(String(url));
+    const path = new URL(url).pathname.replace('/v1', '');
+    const body = bodies[path] ?? { items: [], total: 0 };
+    return new Response(JSON.stringify(body), { status: 200 });
+  });
+  try {
+    assert.deepEqual(await client.getQueue(), {
+      currently_playing: { uri: 'a' },
+      queue: [{ uri: 'b' }],
+    });
+    assert.equal(await client.getCurrentUserId(), 'me');
+    assert.equal(await client.getCurrentUserId(), 'me');
+    assert.equal(urls.filter((url) => url.endsWith('/v1/me')).length, 1, 'read once');
+    await client.getCatalogPage('playlist', 'pl', 50, 50);
+    await client.getCatalogPage('album', 'al', 0, 20);
+    await client.getCatalogPage('artist', 'ar', 0, 20);
+    await client.search('rick & morty', ['track', 'album'], 5);
+  } finally {
+    restore();
+  }
+  assert.deepEqual(urls.slice(-4), [
+    'https://api.spotify.com/v1/playlists/pl/items?offset=50&limit=50',
+    'https://api.spotify.com/v1/albums/al/tracks?offset=0&limit=20',
+    'https://api.spotify.com/v1/artists/ar/albums?include_groups=album,single&offset=0&limit=20',
+    'https://api.spotify.com/v1/search?q=rick+%26+morty&type=track%2Calbum&limit=5',
+  ]);
+});
+
+test('an empty queue or user answer, and the user id forgotten on disconnection', async () => {
+  const client = connectedClient();
+  client.gladys = { setConfig: async () => {} };
+  const restore = stubFetch(async () => new Response(null, { status: 204 }));
+  try {
+    assert.deepEqual(await client.getQueue(), { currently_playing: null, queue: [] });
+    assert.equal(await client.getCurrentUserId(), null);
+    assert.deepEqual(await client.search('x', ['track'], 1), {});
+    await client.clearTokens();
+    assert.equal(client.currentUserId, undefined);
+  } finally {
+    restore();
+  }
+});

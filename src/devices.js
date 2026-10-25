@@ -6,7 +6,7 @@
 //     Spotify device id is the segment right before the feature key (or the last
 //     segment of the device external_id). A Spotify device id has no ':', so a
 //     split is safe;
-//   - the playback states are pushed with `gladys.publishChangedStates` (only
+//   - the playback states are pushed with `gladys.publishNowPlaying` (only
 //     what changed), the select echoes with `gladys.publishState`;
 //   - the playback state is pushed by an autonomous loop (setInterval), like the
 //     Freebox camera push, independent from any poll ack.
@@ -32,11 +32,19 @@ import {
   buildRecentTrackOptions,
   buildFavoriteOptions,
   parseContentValue,
+  filterUsablePlaylists,
+  filterUsableTrackItems,
+  dedupeRecentlyPlayed,
+  sortPlaylistsAlphabetically,
 } from './content.js';
+import { nowPlayingFromPlayer, inactiveNowPlaying } from './music.js';
 import {
   MUSIC_PLAYBACK_STATE,
+  NOW_PLAYING_FEATURE_KEYS,
+  SPOTIFY_REPEAT_STATES,
   PLAYBACK_STATE_POLLING_FREQUENCY_IN_MS,
   REFRESH_AFTER_COMMAND_DELAY_IN_MS,
+  REFRESH_AFTER_COMMAND_FOLLOW_UP_IN_MS,
   VOLUME_COMMAND_GRACE_PERIOD_IN_MS,
   CONTENT_REFRESH_INTERVAL_MS,
   CONTENT_FEATURE_KEYS,
@@ -98,6 +106,11 @@ export function createContentState() {
     // Raw /me/playlists entries by playlist id: the quick-play widget reads
     // their name and cover from here instead of one GET /playlists/{id} each.
     playlistsById: new Map(),
+    // The raw lists behind the three selects, in their select order: the
+    // browse folders of the music box read them (src/music.js).
+    sortedPlaylists: [],
+    recentTracksRaw: [],
+    favoriteTracks: [],
     pendingSelection: null,
     // The feature key (see CONTENT_FEATURE_KEYS) that recorded pendingSelection
     // - so clearing an already-blank select never wipes a DIFFERENT select's
@@ -131,6 +144,11 @@ export async function refreshContent(client, contentState) {
   );
   contentState.recentTracks = buildRecentTrackOptions(rawRecentlyPlayed);
   contentState.favorites = buildFavoriteOptions(rawSavedTracks);
+  contentState.sortedPlaylists = sortPlaylistsAlphabetically(filterUsablePlaylists(rawPlaylists));
+  contentState.recentTracksRaw = dedupeRecentlyPlayed(
+    filterUsableTrackItems(rawRecentlyPlayed),
+  ).map((item) => item.track);
+  contentState.favoriteTracks = filterUsableTrackItems(rawSavedTracks).map((item) => item.track);
   contentState.byValue = new Map(
     [
       ...contentState.playlists.options,
@@ -191,21 +209,37 @@ export async function setDeviceValue(gladys, client, device, feature, value, con
   const deviceId = spotifyDeviceIdFromFeature(feature.external_id);
   switch (feature.type) {
     case DEVICE_FEATURE_TYPES.MUSIC.PLAY:
-      if (contentState.pendingSelection) {
-        await playPendingSelection(client, deviceId, contentState.pendingSelection);
-        // One-shot: a pending selection launches once. Without this, pausing
-        // and pressing Play again re-queues the same track and skips to it
-        // instead of just resuming - Play falls back to a plain resume from
-        // here on, like it would if nothing had ever been selected.
-        contentState.pendingSelection = null;
-        contentState.pendingSelectionFeatureKey = null;
-      } else {
-        await client.play(deviceId);
-      }
+      await play(client, deviceId, contentState);
       break;
     case DEVICE_FEATURE_TYPES.MUSIC.PAUSE:
       await client.pause(deviceId);
       break;
+    // The writable playback state of Gladys 5.3 (the music box writes it):
+    // 1 behaves like the Play button (pending selection included), 0 like
+    // Pause. The Web API has no stop: 2 is outside the declared subset.
+    case DEVICE_FEATURE_TYPES.MUSIC.PLAYBACK_STATE:
+      if (Number(value) === MUSIC_PLAYBACK_STATE.PLAYING) {
+        await play(client, deviceId, contentState);
+      } else if (Number(value) === MUSIC_PLAYBACK_STATE.PAUSED) {
+        await client.pause(deviceId);
+      } else {
+        throw new Error('Spotify can only play or pause (no stop).');
+      }
+      break;
+    case DEVICE_FEATURE_TYPES.MUSIC.POSITION:
+      await client.seek(deviceId, value);
+      break;
+    case DEVICE_FEATURE_TYPES.MUSIC.SHUFFLE:
+      await client.setShuffle(deviceId, Number(value) === 1);
+      break;
+    case DEVICE_FEATURE_TYPES.MUSIC.REPEAT: {
+      const state = SPOTIFY_REPEAT_STATES[Number(value)];
+      if (!state) {
+        throw new Error(`Unknown repeat mode ${value}.`);
+      }
+      await client.setRepeat(deviceId, state);
+      break;
+    }
     case DEVICE_FEATURE_TYPES.MUSIC.NEXT:
       await client.next(deviceId);
       break;
@@ -284,6 +318,28 @@ async function selectContent(gladys, feature, value, contentState) {
 }
 
 /**
+ * The Play command: the pending selection of the content device when one is
+ * set, a plain resume otherwise.
+ * @param {SpotifyClient} client - The Spotify client.
+ * @param {string} deviceId - The Spotify device id.
+ * @param {object} contentState - The Spotify content cache.
+ * @returns {Promise<void>} Resolves once sent.
+ */
+async function play(client, deviceId, contentState) {
+  if (contentState.pendingSelection) {
+    await playPendingSelection(client, deviceId, contentState.pendingSelection);
+    // One-shot: a pending selection launches once. Without this, pausing
+    // and pressing Play again re-queues the same track and skips to it
+    // instead of just resuming - Play falls back to a plain resume from
+    // here on, like it would if nothing had ever been selected.
+    contentState.pendingSelection = null;
+    contentState.pendingSelectionFeatureKey = null;
+  } else {
+    await client.play(deviceId);
+  }
+}
+
+/**
  * Play a pending content selection on a specific Spotify Connect device.
  * @param {SpotifyClient} client - The Spotify client.
  * @param {string} deviceId - The Spotify device id to play on (the feature's
@@ -316,12 +372,53 @@ function createdFeatureIds(gladys) {
 }
 
 /**
+ * Publish the now-playing snapshot of one device, restricted to the features
+ * its created device has: a device created before Gladys 5.3 only has
+ * `playback-state` and `volume` until the user updates it.
+ * @param {object} gladys - The Gladys SDK instance.
+ * @param {Set<string>} created - The created feature external ids.
+ * @param {string} spotifyDeviceId - The Spotify device id.
+ * @param {object} snapshot - The publishNowPlaying snapshot.
+ * @param {object} loopState - Mutable state kept across ticks.
+ * @returns {Promise<void>} Resolves once published (or nothing to publish).
+ */
+async function publishDeviceNowPlaying(gladys, created, spotifyDeviceId, snapshot, loopState) {
+  const ids = gladys.externalIds(DEVICE_TYPE, spotifyDeviceId);
+  const nowPlaying = {};
+  const featureExternalIds = {};
+  for (const [key, value] of Object.entries(snapshot)) {
+    const featureId = ids.feature(NOW_PLAYING_FEATURE_KEYS[key]);
+    if (created.has(featureId)) {
+      nowPlaying[key] = value;
+      if (key === 'playback_state') {
+        featureExternalIds[DEVICE_FEATURE_TYPES.MUSIC.PLAYBACK_STATE] = featureId;
+      }
+    }
+  }
+  if (Object.keys(nowPlaying).length === 0) {
+    return;
+  }
+  // Only the changes reach Gladys; once an hour everything is sent again so
+  // a stable value stays recently dated (the former heartbeat).
+  const lastFull = loopState.lastFullPublishAt.get(ids.device);
+  if (lastFull === undefined || Date.now() - lastFull >= STATE_HEARTBEAT_MS) {
+    gladys.forgetPublishedStates(ids.device);
+    loopState.lastFullPublishAt.set(ids.device, Date.now());
+  }
+  await gladys
+    .publishNowPlaying(ids.device, nowPlaying, { featureExternalIds })
+    .catch((e) => logger.debug(`Spotify: now playing not published: ${e.message}`));
+}
+
+/**
  * Refresh the playback state once and push it to Gladys.
- * Pushes the playback-state and volume features of the active device, and
- * "paused" on the device that stopped being the active one. Only the values
- * that changed reach Gladys (publishChangedStates, re-sent once an hour so a
- * stable value stays recently dated); the SDK forgets them when the user
- * creates a device, so a new device gets its states on the next read.
+ * Publishes what the active device plays (playback state, volume, title,
+ * artist, album, artwork, duration, position, shuffle, repeat) through the
+ * SDK's publishNowPlaying - only the changes, in one batch, the position
+ * only on a state or track change or a seek - and "paused, nothing loaded"
+ * on the device that stopped being the active one. The SDK forgets the
+ * published snapshot when the user creates a device, so a new device gets
+ * its states on the next read.
  * @param {object} gladys - The Gladys SDK instance.
  * @param {SpotifyClient} client - The Spotify client.
  * @param {object} loopState - Mutable state kept across ticks.
@@ -338,45 +435,38 @@ export async function refreshPlaybackState(gladys, client, loopState) {
     logger.debug(`Spotify: unable to refresh playback state: ${e.message}`);
     return undefined;
   }
+  if (!loopState.lastFullPublishAt) {
+    loopState.lastFullPublishAt = new Map();
+  }
   const activeDeviceId = data && data.device ? data.device.id : null;
-  const states = [];
-  const state = (spotifyDeviceId, featureKey, value) =>
-    states.push({
-      device_feature_external_id: gladys
-        .externalIds(DEVICE_TYPE, spotifyDeviceId)
-        .feature(featureKey),
-      state: value,
-    });
+  const created = createdFeatureIds(gladys);
 
-  // The device that was active but no longer is: mark it paused.
+  // The device that was active but no longer is: paused, nothing loaded.
   if (loopState.lastActiveDeviceId && loopState.lastActiveDeviceId !== activeDeviceId) {
-    state(loopState.lastActiveDeviceId, 'playback-state', MUSIC_PLAYBACK_STATE.PAUSED);
+    await publishDeviceNowPlaying(
+      gladys,
+      created,
+      loopState.lastActiveDeviceId,
+      inactiveNowPlaying(),
+      loopState,
+    );
   }
 
   if (activeDeviceId) {
-    state(
-      activeDeviceId,
-      'playback-state',
-      data.is_playing ? MUSIC_PLAYBACK_STATE.PLAYING : MUSIC_PLAYBACK_STATE.PAUSED,
-    );
     // Right after a volume command the API still reports the old volume: don't
     // push it back or the volume slider jumps to the previous value.
     const volumeJustSet =
       Date.now() - (client.lastVolumeCommandAt || 0) < VOLUME_COMMAND_GRACE_PERIOD_IN_MS;
-    const volume = data.device.volume_percent;
-    if (!volumeJustSet && volume !== null && volume !== undefined) {
-      state(activeDeviceId, 'volume', volume);
-    }
+    await publishDeviceNowPlaying(
+      gladys,
+      created,
+      activeDeviceId,
+      nowPlayingFromPlayer(data, { withVolume: !volumeJustSet }),
+      loopState,
+    );
   }
 
   loopState.lastActiveDeviceId = activeDeviceId;
-  const created = createdFeatureIds(gladys);
-  const known = states.filter((entry) => created.has(entry.device_feature_external_id));
-  if (known.length > 0) {
-    await gladys
-      .publishChangedStates(known, { heartbeat: STATE_HEARTBEAT_MS })
-      .catch((e) => logger.debug(`Spotify: playback states not published: ${e.message}`));
-  }
   return data;
 }
 
@@ -393,7 +483,7 @@ export async function refreshPlaybackState(gladys, client, loopState) {
  * const { stop, refreshSoon } = startPlaybackPush(gladys, client);
  */
 export function startPlaybackPush(gladys, client, onPlayer = () => {}) {
-  const loopState = { lastActiveDeviceId: null };
+  const loopState = { lastActiveDeviceId: null, lastFullPublishAt: new Map() };
   const refresh = async () => {
     const data = await refreshPlaybackState(gladys, client, loopState);
     if (data !== undefined) {
@@ -413,9 +503,14 @@ export function startPlaybackPush(gladys, client, onPlayer = () => {}) {
     // Refresh shortly after a command so Gladys reflects the change quickly (the
     // Spotify API needs a moment to report the new state).
     refreshSoon: () => {
-      setTimeout(() => {
-        refresh().catch(() => {});
-      }, REFRESH_AFTER_COMMAND_DELAY_IN_MS);
+      for (const delay of [
+        REFRESH_AFTER_COMMAND_DELAY_IN_MS,
+        REFRESH_AFTER_COMMAND_FOLLOW_UP_IN_MS,
+      ]) {
+        setTimeout(() => {
+          refresh().catch(() => {});
+        }, delay);
+      }
     },
   };
 }

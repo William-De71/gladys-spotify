@@ -48,6 +48,11 @@ export const API = {
   RECENTLY_PLAYED: `${BASE_API}/me/player/recently-played`,
   SAVED_TRACKS: `${BASE_API}/me/tracks`,
   QUEUE: `${BASE_API}/me/player/queue`,
+  SHUFFLE: `${BASE_API}/me/player/shuffle`,
+  REPEAT: `${BASE_API}/me/player/repeat`,
+  SEEK: `${BASE_API}/me/player/seek`,
+  SEARCH: `${BASE_API}/search`,
+  ME: `${BASE_API}/me`,
   // Catalog objects read by the quick-play widget: `${API.CATALOG}/albums/<id>`...
   CATALOG: BASE_API,
 };
@@ -118,6 +123,12 @@ export const TRANSPORT_REFRESH_INTERVAL_MS = 60 * 1000;
 // needs a moment to report the new state.
 export const REFRESH_AFTER_COMMAND_DELAY_IN_MS = 500;
 
+// A second read after a command: shuffle, repeat or a context start can take
+// a few seconds to show in GET /me/player, and the music box of the dashboard
+// waits for the confirmation of a `has_feedback` feature (15 s) - the regular
+// 15 s tick alone would land right on that deadline.
+export const REFRESH_AFTER_COMMAND_FOLLOW_UP_IN_MS = 3000;
+
 // After a volume command, the Spotify API keeps reporting the old volume for a
 // few seconds: don't push back the polled volume during this window or the
 // volume slider jumps back to the previous value.
@@ -141,10 +152,65 @@ export const SKIP_UNTIL_PLAYING_MAX_ATTEMPTS = 15;
 export const SKIP_UNTIL_PLAYING_CHECK_DELAY_MS = 400;
 
 // Gladys MUSIC playback-state values (mirror of the core's MUSIC_PLAYBACK_STATE).
+// Only PAUSED and PLAYING are ever published or accepted: the Web API has no
+// stop, and the `playback-state` feature was created with max 1 (an eternal
+// field), so IDLE (2) and BUFFERING (3) stay out.
 export const MUSIC_PLAYBACK_STATE = {
   PAUSED: 0,
   PLAYING: 1,
 };
+
+// -----------------------------------------------------------------------------
+// Music player (Gladys 5.3, capabilities/music.md): now-playing features, the
+// on-demand catalog and the artwork.
+// -----------------------------------------------------------------------------
+
+// Feature keys of the now-playing features added for Gladys 5.3 (external ids
+// `<device>:<key>`, forever), by the key of the SDK's publishNowPlaying
+// snapshot. `playback_state` and `volume` are the two historical features.
+export const NOW_PLAYING_FEATURE_KEYS = {
+  playback_state: 'playback-state',
+  volume: 'volume',
+  title: 'title',
+  artist: 'artist',
+  album: 'album',
+  artwork_url: 'artwork',
+  duration: 'duration',
+  position: 'position',
+  shuffle: 'shuffle',
+  repeat: 'repeat',
+};
+
+// Spotify repeat_state <-> Gladys MUSIC_REPEAT_MODE (OFF 0, ALL 1, ONE 2).
+export const SPOTIFY_REPEAT_STATES = ['off', 'context', 'track'];
+
+// Artwork widths asked from Spotify (it serves 640, 300 and 64 px covers):
+// the now-playing frame renders under 400 px, a list thumbnail under 64 px.
+// Spotify's 300 px JPEG weighs 20-40 KB, far under the 300 KB the core takes.
+export const NOW_PLAYING_ARTWORK_MIN_WIDTH = 300;
+export const THUMBNAIL_ARTWORK_MIN_WIDTH = 64;
+
+// Ids of the root folders of the catalog (MediaItem ids, stored in the
+// `music.play-media` scene actions - forever). Never a Spotify URI.
+export const BROWSE_FOLDERS = {
+  PLAYLISTS: 'folder:playlists',
+  FAVORITES: 'folder:favorites',
+  RECENT: 'folder:recent',
+};
+
+// Titles of the root folders. Gladys sends no language with a browse
+// command: fixed French titles, like the option prefixes of the content
+// device (CONTENT_LABEL_PREFIX), a deliberate choice.
+export const BROWSE_FOLDER_TITLES = {
+  [BROWSE_FOLDERS.PLAYLISTS]: 'Playlists',
+  [BROWSE_FOLDERS.FAVORITES]: 'Titres likés',
+  [BROWSE_FOLDERS.RECENT]: 'Écoutés récemment',
+};
+
+// Spotify's page caps: 50 items per page on the catalog endpoints, 10 per
+// type on GET /search for a Development Mode app (since February 2026).
+export const CATALOG_PAGE_SIZE = 50;
+export const SEARCH_LIMIT_PER_TYPE = 10;
 
 // -----------------------------------------------------------------------------
 // Spotify content device: three separate, mutually exclusive selects

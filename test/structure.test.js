@@ -15,8 +15,19 @@ const baseline = JSON.parse(
   readFileSync(new URL('./fixtures/discovery.baseline.json', import.meta.url), 'utf8'),
 );
 
-// feature external id -> the eternal fields that changed on purpose. None.
-const ALLOWED_CHANGES = {};
+// feature external id -> the eternal fields that changed on purpose.
+//
+// Gladys 5.3 (music player): `playback-state` became writable and declares
+// the play/pause subset of MUSIC_PLAYBACK_STATE through supported_options
+// (the Web API has no stop). An addition only: category, type, min and max
+// are unchanged, so the "Update" button is not triggered by it, and the
+// option values (0, 1) are the values the feature always carried. No
+// migration needed.
+const PLAYBACK_STATE_OPTIONS = { option_values: [0, 1] };
+const ALLOWED_CHANGES = {
+  'ext:spotify:spotify:a1b2c3d4e5f6:playback-state': PLAYBACK_STATE_OPTIONS,
+  'ext:spotify:spotify:0f9e8d7c6b5a:playback-state': PLAYBACK_STATE_OPTIONS,
+};
 
 test('every device keeps its device and feature structure', async () => {
   const current = await discoveryStructure();

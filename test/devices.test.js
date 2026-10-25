@@ -40,7 +40,7 @@ function createGladysStub() {
   };
 }
 
-test('convertToGladysDevice builds prefixed external ids and the 6 MUSIC features (no content select)', () => {
+test('convertToGladysDevice builds prefixed external ids and the 14 MUSIC features (no content select)', () => {
   const gladysStub = createGladysStub();
   const device = convertToGladysDevice(gladysStub, {
     id: 'abc123',
@@ -50,7 +50,7 @@ test('convertToGladysDevice builds prefixed external ids and the 6 MUSIC feature
 
   assert.equal(device.external_id, 'ext:ext-dev-spotify:spotify:abc123');
   assert.equal(device.name, 'Living room');
-  assert.equal(device.features.length, 6);
+  assert.equal(device.features.length, 14);
   // The core rejects a device payload carrying attributes outside its contract,
   // so only the SDK `Device` fields must be sent.
   assert.deepEqual(Object.keys(device).sort(), ['external_id', 'features', 'name']);
@@ -59,8 +59,37 @@ test('convertToGladysDevice builds prefixed external ids and the 6 MUSIC feature
   assert.equal(byType.play.external_id, 'ext:ext-dev-spotify:spotify:abc123:play');
   assert.equal(byType.volume.min, 0);
   assert.equal(byType.volume.max, 100);
-  assert.equal(byType.playback_state.read_only, true);
-  device.features.forEach((f) => assert.equal(f.category, 'music'));
+  // Writable since Gladys 5.3, with the play/pause subset (no stop).
+  assert.equal(byType.playback_state.read_only, false);
+  assert.equal(byType.playback_state.has_feedback, true);
+  assert.equal(byType.playback_state.max, 1);
+  assert.deepEqual(
+    byType.playback_state.supported_options.map((option) => option.value),
+    [0, 1],
+  );
+  // The now-playing features: new keys, read-only metadata, writable controls.
+  assert.deepEqual(
+    device.features.slice(6).map((f) => [f.external_id.split(':').at(-1), f.type, f.read_only]),
+    [
+      ['title', 'title', true],
+      ['artist', 'artist', true],
+      ['album', 'album', true],
+      ['artwork', 'artwork', true],
+      ['duration', 'duration', true],
+      ['position', 'position', false],
+      ['shuffle', 'shuffle', false],
+      ['repeat', 'repeat', false],
+    ],
+  );
+  assert.equal(byType.position.unit, 'seconds');
+  assert.equal(byType.repeat.max, 2);
+  device.features.forEach((f) => {
+    assert.equal(f.category, 'music');
+    assert.equal(f.keep_history, false);
+    if (f.type !== 'volume' && !['play', 'pause', 'previous', 'next'].includes(f.type)) {
+      assert.equal(f.has_feedback, !f.read_only, `${f.type}.has_feedback`);
+    }
+  });
 });
 
 test('convertContentDevice builds the fixed Spotify content device with its 3 selects', () => {

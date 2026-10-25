@@ -98,6 +98,9 @@ export class SpotifyClient {
     // fails fast instead of hitting the token endpoint on each poll, until a
     // new authorization stores a different refresh token.
     this.authRevoked = false;
+    // Spotify id of the signed-in user (getCurrentUserId), undefined until
+    // read; forgotten with the tokens (another account may sign in).
+    this.currentUserId = undefined;
     // Last volume command (ms epoch), see VOLUME_COMMAND_GRACE_PERIOD_IN_MS.
     this.lastVolumeCommandAt = 0;
   }
@@ -279,6 +282,8 @@ export class SpotifyClient {
       refreshToken: data.refresh_token,
       expiresIn: data.expires_in,
     });
+    // Possibly another Spotify account: read its user id again.
+    this.currentUserId = undefined;
     // Record the scope version only now that the exchange succeeded: an
     // abandoned or refused (re)authorization must never bump it, or a
     // still-outdated connection would stop being flagged as such.
@@ -595,6 +600,103 @@ export class SpotifyClient {
   }
 
   /**
+   * Turn shuffle on or off on a device.
+   * @param {string} deviceId - The Spotify device id.
+   * @param {boolean} enabled - The wanted shuffle state.
+   * @returns {Promise<void>} Resolves when the command is sent.
+   */
+  async setShuffle(deviceId, enabled) {
+    await this.callApi(
+      'PUT',
+      `${API.SHUFFLE}?state=${enabled ? 'true' : 'false'}&device_id=${deviceId}`,
+    );
+  }
+
+  /**
+   * Set the repeat mode of a device.
+   * @param {string} deviceId - The Spotify device id.
+   * @param {'off'|'context'|'track'} state - The Spotify repeat state.
+   * @returns {Promise<void>} Resolves when the command is sent.
+   */
+  async setRepeat(deviceId, state) {
+    await this.callApi('PUT', `${API.REPEAT}?state=${state}&device_id=${deviceId}`);
+  }
+
+  /**
+   * Seek to a position in the current track of a device.
+   * @param {string} deviceId - The Spotify device id.
+   * @param {number} positionSeconds - The position, in seconds.
+   * @returns {Promise<void>} Resolves when the command is sent.
+   */
+  async seek(deviceId, positionSeconds) {
+    const positionMs = Math.max(0, Math.round((Number(positionSeconds) || 0) * 1000));
+    await this.callApi('PUT', `${API.SEEK}?position_ms=${positionMs}&device_id=${deviceId}`);
+  }
+
+  /**
+   * Read the queue of the active device (GET /me/player/queue): the current
+   * item and what follows (the user's queue, then the context, as Spotify
+   * would play them - about 20 items, no paging).
+   * @returns {Promise<{currently_playing: object|null, queue: Array}>} The queue.
+   */
+  async getQueue() {
+    const data = await this.callApi('GET', API.QUEUE);
+    return {
+      currently_playing: data && data.currently_playing ? data.currently_playing : null,
+      queue: data && Array.isArray(data.queue) ? data.queue.filter(Boolean) : [],
+    };
+  }
+
+  /**
+   * The Spotify id of the signed-in user (GET /me), read once: it tells the
+   * playlists whose tracks the Web API lists (owned or collaborative ones).
+   * @returns {Promise<string|null>} The id, null when it cannot be read.
+   */
+  async getCurrentUserId() {
+    if (this.currentUserId === undefined) {
+      const me = await this.callApi('GET', API.ME);
+      this.currentUserId = me && typeof me.id === 'string' ? me.id : null;
+    }
+    return this.currentUserId;
+  }
+
+  /**
+   * Read a page of a catalog list, for the music browse panel.
+   * @param {'playlist'|'album'|'artist'} kind - What to list: the items of a
+   *   playlist (GET /playlists/{id}/items), the tracks of an album or the
+   *   albums of an artist.
+   * @param {string} id - The Spotify id.
+   * @param {number} offset - The page start.
+   * @param {number} limit - The page size (≤ 50).
+   * @returns {Promise<object|null>} The raw paging object (`items`, `total`),
+   *   null when Spotify refuses to list it.
+   */
+  async getCatalogPage(kind, id, offset, limit) {
+    const paths = {
+      // Renamed from /tracks in February 2026; only for a playlist the user
+      // owns or collaborates on (a Development Mode app).
+      playlist: `playlists/${encodeURIComponent(id)}/items`,
+      album: `albums/${encodeURIComponent(id)}/tracks`,
+      artist: `artists/${encodeURIComponent(id)}/albums?include_groups=album,single`,
+    };
+    const path = paths[kind];
+    const separator = path.includes('?') ? '&' : '?';
+    return this.callApi('GET', `${API.CATALOG}/${path}${separator}offset=${offset}&limit=${limit}`);
+  }
+
+  /**
+   * Search the Spotify catalog (GET /search).
+   * @param {string} query - The text typed.
+   * @param {Array<string>} types - Spotify types (`track`, `album`, `artist`, `playlist`).
+   * @param {number} limit - Results per type (≤ 10 for a Development Mode app).
+   * @returns {Promise<object>} The raw response (`tracks`, `albums`…).
+   */
+  async search(query, types, limit) {
+    const params = new URLSearchParams({ q: query, type: types.join(','), limit: String(limit) });
+    return (await this.callApi('GET', `${API.SEARCH}?${params.toString()}`)) || {};
+  }
+
+  /**
    * Activate a device without starting or stopping playback on it (PUT
    * /me/player, `play: false`). A necessary first step before playContext /
    * playTrackUri when the target device is not already the active one:
@@ -759,6 +861,7 @@ export class SpotifyClient {
    * @returns {Promise<void>} Resolves once the tokens are cleared.
    */
   async clearTokens() {
+    this.currentUserId = undefined;
     await this.storeTokens({ accessToken: '', refreshToken: '', expiresIn: 0 });
   }
 }

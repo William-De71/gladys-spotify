@@ -3,7 +3,7 @@
 [![Lizenz: Apache-2.0](https://img.shields.io/badge/Lizenz-Apache--2.0-blue.svg)](LICENSE)
 [![Neueste Version](https://img.shields.io/github/v/release/William-De71/gladys-spotify?sort=semver)](https://github.com/William-De71/gladys-spotify/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/William-De71/gladys-spotify/release.yml?branch=main&label=CI)](https://github.com/William-De71/gladys-spotify/actions/workflows/release.yml)
-[![Gladys](https://img.shields.io/badge/Gladys-%E2%89%A5%205.1.0-2f6fb5)](https://gladysassistant.com)
+[![Gladys](https://img.shields.io/badge/Gladys-%E2%89%A5%205.3.0-2f6fb5)](https://gladysassistant.com)
 
 ![Spotify für Gladys Assistant](cover.jpg)
 
@@ -29,6 +29,8 @@ Benutzerdokumentation, die Gladys anzeigt: [English](docs/en.md) · [Français](
 - [Cloud-Badge](#cloud-badge)
 - [Szenen](#szenen)
 - [Dashboard-Widgets](#dashboard-widgets)
+- [Musikplayer](#musikplayer)
+- [Aktualisierung von 1.5.x](#aktualisierung-von-15x)
 - [Aktualisierung von 1.4.x](#aktualisierung-von-14x)
 - [Fehlerbehebung](#fehlerbehebung)
 - [Entwicklung](#entwicklung)
@@ -38,17 +40,18 @@ Benutzerdokumentation, die Gladys anzeigt: [English](docs/en.md) · [Français](
 
 ## Funktionen
 
-| Spotify                | In Gladys                                                                                                   |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Spotify-Connect-Geräte | Ein Gerät pro Online-Gerät: Wiedergabe, Pause, Zurück, Weiter, Lautstärke, Status Wiedergabe/Pause          |
-| Playlists und Titel    | Ein Gerät „Spotify“ mit 3 Auswahllisten (Playlists, zuletzt gespielte Titel, Favoriten), gestartet per Play |
-| Wiedergabeänderungen   | Szenen-Auslöser: Wiedergabe gestartet, Wiedergabe gestoppt, Titel gewechselt                                |
-| Szenenoperationen      | Szenen-Aktionen: einen Spotify-Link auf einem Gerät abspielen, Pause, aktuelle Wiedergabe auslesen          |
-| Dashboard              | Widgets: Aktuelle Wiedergabe, Schnellstart (4 Links), Zuletzt gespielt                                      |
-| Verfügbarkeit          | Cloud-Badge an jedem Gerät, Nicht erreichbar, solange Spotify darauf nicht läuft                            |
-| Sprachen               | Englisch, Französisch, Deutsch und Spanisch (Konfiguration, Meldungen, Widgets, Szenen, Dokumentation)      |
+| Spotify                | In Gladys                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Spotify-Connect-Geräte | Ein Gerät pro Online-Gerät: Wiedergabe, Pause, Zurück, Weiter, Lautstärke, Status Wiedergabe/Pause                            |
+| Playlists und Titel    | Ein Gerät „Spotify“ mit 3 Auswahllisten (Playlists, zuletzt gespielte Titel, Favoriten), gestartet per Play                   |
+| Wiedergabeänderungen   | Szenen-Auslöser: Wiedergabe gestartet, Wiedergabe gestoppt, Titel gewechselt                                                  |
+| Szenenoperationen      | Szenen-Aktionen: einen Spotify-Link auf einem Gerät abspielen, Pause, aktuelle Wiedergabe auslesen                            |
+| Dashboard              | Widgets: Aktuelle Wiedergabe, Schnellstart (4 Links), Zuletzt gespielt                                                        |
+| Musikplayer            | Musikbox von Gladys 5.3: Cover, Titel, Interpret, Fortschritt, Spulen, Zufall, Wiederholen, Durchsuchen, Suche, Warteschlange |
+| Verfügbarkeit          | Cloud-Badge an jedem Gerät, Nicht erreichbar, solange Spotify darauf nicht läuft                                              |
+| Sprachen               | Englisch, Französisch, Deutsch und Spanisch (Konfiguration, Meldungen, Widgets, Szenen, Dokumentation)                        |
 
-Erfordert **Gladys 5.1.0** oder neuer und ein **Spotify-Premium**-Konto: Spotify lehnt Wiedergabebefehle von kostenlosen
+Erfordert **Gladys 5.3.0** oder neuer und ein **Spotify-Premium**-Konto: Spotify lehnt Wiedergabebefehle von kostenlosen
 Konten ab.
 
 ## Architektur
@@ -109,7 +112,8 @@ sequenceDiagram
 Spotify sendet von sich aus nichts: Die Integration liest die Wiedergabe alle 15 Sekunden mit einem eigenen Timer aus
 (kein Polling durch Gladys), veröffentlicht nur die geänderten Werte (einmal pro Stunde erneut gesendet) und die
 Szenen-Ereignisse bei Übergängen. Die Inhaltslisten werden alle 20 Minuten und auf Anforderung gelesen, die
-Online-Geräte einmal pro Minute für das Cloud-Badge.
+Online-Geräte einmal pro Minute für das Cloud-Badge. Die Musikbox des Dashboards fragt ihre Listen (Durchsuchen, Suche,
+Warteschlange) und die Cover bei Bedarf ab: Nichts wird gespeichert.
 
 ## Installation
 
@@ -152,10 +156,10 @@ Spotify.
 
 ## Geräte
 
-| Gerät                              | Merkmale                                                                                     |
-| ---------------------------------- | -------------------------------------------------------------------------------------------- |
-| Jedes Spotify-Connect-Gerät        | `music` Wiedergabe, Pause, Zurück, Weiter, Lautstärke (0–100), Wiedergabestatus (nur lesend) |
-| „Spotify“ (eines pro Installation) | `text` Auswahl × 3: Playlists, zuletzt gespielte Titel, Favoriten                            |
+| Gerät                              | Merkmale                                                                                                                                                                          |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Jedes Spotify-Connect-Gerät        | `music` Wiedergabe, Pause, Zurück, Weiter, Lautstärke (0–100), Wiedergabestatus (Wiedergabe/Pause), Titel, Interpret, Album, Cover, Dauer, Position (Spulen), Zufall, Wiederholen |
+| „Spotify“ (eines pro Installation) | `text` Auswahl × 3: Playlists, zuletzt gespielte Titel, Favoriten                                                                                                                 |
 
 Die Auswahl einer Option des Geräts „Spotify“ spielt von sich aus nie etwas ab: Sie wird zur **ausstehenden Auswahl**,
 und die Play-Schaltfläche eines beliebigen Spotify-Connect-Geräts startet sie. Der Wert jeder Option ist ein einfacher
@@ -203,6 +207,36 @@ Beispiele: _Wenn die Wiedergabe im „Wohnzimmer“ startet, die Lichter dimmen_
 - **Spotify – Zuletzt gespielt**: die 1 bis 8 neuesten Titel mit Cover und Uhrzeit, der aktuelle mit Badge.
 
 Das Bild oben wird aus dem Widget-Code mit `docs/illustrations/render.sh` erzeugt.
+
+## Musikplayer
+
+Mit Gladys 5.3 ist jedes Spotify-Connect-Gerät ein vollwertiger Player in der **Musik**-Box des Dashboards: Cover,
+Titel, Interpret und Album, ein Fortschrittsbalken zum Spulen, Wiedergabe/Pause, Zurück/Weiter, Zufall, Wiederholen
+(aus, alle, ein Titel) und Lautstärke. Ihre Schaltflächen öffnen:
+
+| Bereich       | Inhalt                                                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Durchsuchen   | „Playlists“, „Titres likés“ (Lieblingssongs), „Écoutés récemment“ (zuletzt gehört), dann die Titel einer Playlist oder eines Albums |
+| Suche         | Titel, Interpreten, Alben und Playlists (höchstens 10 pro Typ: die Grenze von Spotify für eine persönliche App)                     |
+| Warteschlange | Was das aktive Gerät als Nächstes spielt; ein Tippen springt dorthin                                                                |
+
+Ein Tippen auf ein Ergebnis ersetzt die laufende Wiedergabe; die Kern-Szenenaktion **Musik auf einem Lautsprecher abspielen** nutzt denselben
+Katalog. Die Namen der drei Ordner sind fest auf Französisch, wie die Optionspräfixe des Geräts „Spotify“: Gladys sendet
+mit diesen Anfragen keine Sprache.
+
+Grenzen von Spotify: kein „als Nächstes abspielen“ oder „zur Warteschlange hinzufügen“ (die Web-API hängt nur einen
+einzelnen Titel ans Ende der Warteschlange an, daher deklariert das Manifest `append: false`), kein Stopp (nur Pause)
+und keine Stummschaltung; die Titel einer Playlist werden nur für eigene oder gemeinsame Playlists aufgelistet (die
+anderen werden ganz abgespielt); die Warteschlange gibt es nur auf dem aktiven Gerät. Die Cover sind die 300-px- und
+64-px-Bilder von Spotify, von der Integration ausgeliefert, nie vom Browser geladen.
+
+## Aktualisierung von 1.5.x
+
+Erfordert **Gladys 5.3.0**. Geräte, Einstellungen, Widgets und Szenen bleiben unverändert erhalten, und die bisherigen
+Schaltflächen funktionieren weiter. Für die neuen Funktionen des Musikplayers öffnen Sie den Reiter **Entdecken** der
+Integration und klicken bei jedem Spotify-Connect-Gerät auf **Aktualisieren**: Das fügt Titel, Interpret, Album, Cover,
+Dauer, Position, Zufall und Wiederholen hinzu und macht den Wiedergabestatus schreibbar (Wiedergabe/Pause). Bis dahin
+zeigt die Musikbox ihre klassischen Bedienelemente.
 
 ## Aktualisierung von 1.4.x
 

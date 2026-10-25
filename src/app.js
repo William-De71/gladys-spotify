@@ -11,7 +11,10 @@
 //   3. three loops: playback (15 s, states, widgets and scene triggers),
 //      content (20 min) and transport badges (1 min);
 //   4. the dashboard widgets (src/widgetHandlers.js) and the scene actions
-//      (src/sceneActions.js).
+//      (src/sceneActions.js);
+//   5. the music player of Gladys 5.3 (src/music.js): now-playing states
+//      published by the playback loop, browse / search / play / queue and
+//      the artwork of the dashboard music box.
 //
 // Auth model: the user creates a Spotify app and pastes its Client ID / Client
 // Secret in the Configuration screen (config_schema). Clicking "Connect with
@@ -43,6 +46,7 @@ import { WIDGETS } from './widgets.js';
 import { createPlaybackEvents } from './events.js';
 import { registerSceneActions } from './sceneActions.js';
 import { createTransportPublisher } from './transport.js';
+import { registerMusic } from './music.js';
 
 /**
  * Register every handler of the integration on a Gladys SDK instance.
@@ -69,6 +73,9 @@ export function createApp(gladys, { client = new SpotifyClient(gladys) } = {}) {
     publish: (key, data) => gladys.publishSceneEvent(key, data),
     deviceExternalId: (spotifyDeviceId) => gladys.externalIds(DEVICE_TYPE, spotifyDeviceId).device,
   });
+  // The last GET /me/player the loop read (undefined before the first one):
+  // the music queue only exists on the active device.
+  let lastPlayer;
   // Handle of the transport badge loop, and the publisher (changes only).
   let transportRefresh = null;
   const transports = createTransportPublisher(gladys);
@@ -78,6 +85,7 @@ export function createApp(gladys, { client = new SpotifyClient(gladys) } = {}) {
    * @param {object|null} data - The raw response.
    */
   function onPlayer(data) {
+    lastPlayer = data;
     widgets.onPlayer(data);
     events
       .observe(data)
@@ -157,6 +165,16 @@ export function createApp(gladys, { client = new SpotifyClient(gladys) } = {}) {
     // (a scene bound to them would loop), and the states follow quickly.
     onPlaybackChanged: () => {
       events.quiet();
+      if (playback) {
+        playback.refreshSoon();
+      }
+    },
+  });
+
+  registerMusic(gladys, client, {
+    contentState,
+    getLastPlayer: () => lastPlayer,
+    onPlaybackChanged: () => {
       if (playback) {
         playback.refreshSoon();
       }
@@ -499,6 +517,7 @@ export function createApp(gladys, { client = new SpotifyClient(gladys) } = {}) {
 
   gladys.on('disconnected', () => {
     stopLoops();
+    lastPlayer = undefined;
     // The next observation is a new baseline: nothing fires for what happened
     // while Gladys could not be told.
     events.reset();

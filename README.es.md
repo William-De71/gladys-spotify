@@ -3,7 +3,7 @@
 [![Licencia: Apache-2.0](https://img.shields.io/badge/licencia-Apache--2.0-blue.svg)](LICENSE)
 [![Última versión](https://img.shields.io/github/v/release/William-De71/gladys-spotify?sort=semver)](https://github.com/William-De71/gladys-spotify/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/William-De71/gladys-spotify/release.yml?branch=main&label=CI)](https://github.com/William-De71/gladys-spotify/actions/workflows/release.yml)
-[![Gladys](https://img.shields.io/badge/Gladys-%E2%89%A5%205.1.0-2f6fb5)](https://gladysassistant.com)
+[![Gladys](https://img.shields.io/badge/Gladys-%E2%89%A5%205.3.0-2f6fb5)](https://gladysassistant.com)
 
 ![Spotify para Gladys Assistant](cover.jpg)
 
@@ -29,6 +29,8 @@ Documentación de usuario, la que muestra Gladys: [English](docs/en.md) · [Fran
 - [Insignia Cloud](#insignia-cloud)
 - [Escenas](#escenas)
 - [Widgets del panel](#widgets-del-panel)
+- [Reproductor de música](#reproductor-de-música)
+- [Actualización desde 1.5.x](#actualización-desde-15x)
 - [Actualización desde 1.4.x](#actualización-desde-14x)
 - [Solución de problemas](#solución-de-problemas)
 - [Desarrollo](#desarrollo)
@@ -38,17 +40,18 @@ Documentación de usuario, la que muestra Gladys: [English](docs/en.md) · [Fran
 
 ## Características
 
-| Spotify                         | En Gladys                                                                                                             |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Dispositivos Spotify Connect    | Un dispositivo por cada dispositivo en línea: reproducir, pausa, anterior, siguiente, volumen, estado de reproducción |
-| Listas de reproducción y pistas | Un dispositivo "Spotify" con 3 selectores (listas, canciones recientes, favoritos) que se lanzan con Reproducir       |
-| Cambios de reproducción         | Disparadores de escena: reproducción iniciada, reproducción detenida, canción cambiada                                |
-| Operaciones de escena           | Acciones de escena: reproducir un enlace de Spotify en un dispositivo, pausa, leer lo que suena                       |
-| Panel                           | Widgets: reproduciendo ahora, reproducción rápida (4 enlaces), reproducido recientemente                              |
-| Disponibilidad                  | Insignia Cloud en cada dispositivo, Inaccesible mientras Spotify no se ejecuta en él                                  |
-| Idiomas                         | Inglés, francés, alemán y español (configuración, mensajes, widgets, escenas, documentación)                          |
+| Spotify                         | En Gladys                                                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Dispositivos Spotify Connect    | Un dispositivo por cada dispositivo en línea: reproducir, pausa, anterior, siguiente, volumen, estado de reproducción     |
+| Listas de reproducción y pistas | Un dispositivo "Spotify" con 3 selectores (listas, canciones recientes, favoritos) que se lanzan con Reproducir           |
+| Cambios de reproducción         | Disparadores de escena: reproducción iniciada, reproducción detenida, canción cambiada                                    |
+| Operaciones de escena           | Acciones de escena: reproducir un enlace de Spotify en un dispositivo, pausa, leer lo que suena                           |
+| Panel                           | Widgets: reproduciendo ahora, reproducción rápida (4 enlaces), reproducido recientemente                                  |
+| Reproductor de música           | Caja de música de Gladys 5.3: portada, título, artista, progreso, avance, aleatorio, repetición, explorar, búsqueda, cola |
+| Disponibilidad                  | Insignia Cloud en cada dispositivo, Inaccesible mientras Spotify no se ejecuta en él                                      |
+| Idiomas                         | Inglés, francés, alemán y español (configuración, mensajes, widgets, escenas, documentación)                              |
 
-Requiere **Gladys 5.1.0** o posterior y una cuenta **Spotify Premium**: Spotify rechaza los comandos de reproducción de
+Requiere **Gladys 5.3.0** o posterior y una cuenta **Spotify Premium**: Spotify rechaza los comandos de reproducción de
 las cuentas gratuitas.
 
 ## Arquitectura
@@ -109,7 +112,8 @@ sequenceDiagram
 Spotify no envía nada por iniciativa propia: la integración lee la reproducción cada 15 segundos con su propio
 temporizador (sin sondeo de Gladys), publica solo los valores que han cambiado (reenviados una vez por hora) y los
 eventos de escena en cada transición. Las listas de contenidos se leen cada 20 minutos y bajo demanda, y los
-dispositivos en línea una vez por minuto para la insignia Cloud.
+dispositivos en línea una vez por minuto para la insignia Cloud. La caja de música del panel pide sus listas (explorar,
+búsqueda, cola) y las portadas bajo demanda: no se almacena nada.
 
 ## Instalación
 
@@ -151,10 +155,10 @@ caducidad de 6 meses) marca la conexión como revocada: nada llega a Spotify has
 
 ## Dispositivos
 
-| Dispositivo                      | Funcionalidades                                                                                        |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Cada dispositivo Spotify Connect | `music` reproducir, pausa, anterior, siguiente, volumen (0–100), estado de reproducción (solo lectura) |
-| "Spotify" (uno por instalación)  | `text` selector × 3: listas de reproducción, canciones recientes, favoritos                            |
+| Dispositivo                      | Funcionalidades                                                                                                                                                                                 |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cada dispositivo Spotify Connect | `music` reproducir, pausa, anterior, siguiente, volumen (0–100), estado de reproducción (reproducir/pausa), título, artista, álbum, portada, duración, posición (avance), aleatorio, repetición |
+| "Spotify" (uno por instalación)  | `text` selector × 3: listas de reproducción, canciones recientes, favoritos                                                                                                                     |
 
 Elegir una opción del dispositivo "Spotify" nunca reproduce nada por sí solo: se convierte en la **selección
 pendiente**, y el botón Reproducir de cualquier dispositivo Spotify Connect la lanza. El valor de cada opción es una
@@ -202,6 +206,36 @@ la lista "Mañana" en el altavoz de la cocina_; _cuando salga de casa, pausar Sp
   insignia.
 
 La imagen anterior se genera a partir del código de los widgets con `docs/illustrations/render.sh`.
+
+## Reproductor de música
+
+Con Gladys 5.3, cada dispositivo Spotify Connect es un reproductor completo en la caja **música** del panel: portada,
+título, artista y álbum, una barra de progreso que se puede arrastrar para avanzar, reproducir/pausa,
+anterior/siguiente, aleatorio, repetición (no, todo, una canción) y volumen. Sus botones abren:
+
+| Panel    | Contenido                                                                                                                                            |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Explorar | "Playlists", "Titres likés" (canciones que te gustan), "Écoutés récemment" (escuchado recientemente), luego las canciones de una lista o de un álbum |
+| Buscar   | Canciones, artistas, álbumes y listas (10 como máximo por tipo: el límite de Spotify para una aplicación personal)                                   |
+| Cola     | Lo que el dispositivo activo reproduce a continuación; un toque salta a ello                                                                         |
+
+Un toque en un resultado sustituye la reproducción en curso; la acción de escena **Reproducir música en un altavoz** del núcleo usa
+el mismo catálogo. Los nombres de las tres carpetas son fijos, en francés, como los prefijos de las opciones del
+dispositivo "Spotify": Gladys no envía el idioma con estas peticiones.
+
+Límites de Spotify: no hay "reproducir a continuación" ni "añadir a la cola" (la Web API solo añade una canción al
+final de la cola, por eso el manifiesto declara `append: false`), ni parada (solo pausa) ni silencio; las canciones de
+una lista solo se muestran para sus propias listas o las colaborativas (las demás se reproducen enteras); la cola solo
+existe en el dispositivo activo. Las portadas son las imágenes de 300 px y 64 px de Spotify, servidas por la
+integración, nunca cargadas por el navegador.
+
+## Actualización desde 1.5.x
+
+Requiere **Gladys 5.3.0**. Dispositivos, ajustes, widgets y escenas se conservan tal cual, y los botones existentes
+siguen funcionando. Para obtener las nuevas funciones del reproductor de música, abra la pestaña **Descubrir** de
+la integración y pulse **Actualizar** en cada dispositivo Spotify Connect: añade título, artista, álbum, portada,
+duración, posición, aleatorio y repetición, y hace que el estado de reproducción se pueda escribir (reproducir/pausa).
+Hasta entonces, la caja de música muestra sus controles clásicos.
 
 ## Actualización desde 1.4.x
 

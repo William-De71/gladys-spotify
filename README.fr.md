@@ -3,7 +3,7 @@
 [![Licence : Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-blue.svg)](LICENSE)
 [![Dernière version](https://img.shields.io/github/v/release/William-De71/gladys-spotify?sort=semver)](https://github.com/William-De71/gladys-spotify/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/William-De71/gladys-spotify/release.yml?branch=main&label=CI)](https://github.com/William-De71/gladys-spotify/actions/workflows/release.yml)
-[![Gladys](https://img.shields.io/badge/Gladys-%E2%89%A5%205.1.0-2f6fb5)](https://gladysassistant.com)
+[![Gladys](https://img.shields.io/badge/Gladys-%E2%89%A5%205.3.0-2f6fb5)](https://gladysassistant.com)
 
 ![Spotify pour Gladys Assistant](cover.jpg)
 
@@ -29,6 +29,8 @@ Documentation utilisateur, celle que Gladys affiche : [English](docs/en.md) · [
 - [Badge Cloud](#badge-cloud)
 - [Scènes](#scènes)
 - [Widgets du tableau de bord](#widgets-du-tableau-de-bord)
+- [Lecteur de musique](#lecteur-de-musique)
+- [Mise à jour depuis 1.5.x](#mise-à-jour-depuis-15x)
 - [Mise à jour depuis 1.4.x](#mise-à-jour-depuis-14x)
 - [Dépannage](#dépannage)
 - [Développement](#développement)
@@ -38,17 +40,18 @@ Documentation utilisateur, celle que Gladys affiche : [English](docs/en.md) · [
 
 ## Fonctionnalités
 
-| Spotify                   | Dans Gladys                                                                                                 |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Appareils Spotify Connect | Un appareil par appareil en ligne : lecture, pause, précédent, suivant, volume, état lecture/pause          |
-| Playlists et titres       | Un appareil « Spotify » avec 3 listes de sélection (playlists, titres récents, favoris) lancées par Lecture |
-| Changements de lecture    | Déclencheurs de scène : lecture démarrée, lecture arrêtée, titre changé                                     |
-| Opérations de scène       | Actions de scène : lire un lien Spotify sur un appareil, mettre en pause, lire ce qui est en cours          |
-| Tableau de bord           | Widgets : en cours de lecture, lecture rapide (4 liens), lus récemment                                      |
-| Disponibilité             | Badge Cloud sur chaque appareil, Injoignable tant que Spotify ne tourne pas dessus                          |
-| Langues                   | Anglais, français, allemand et espagnol (configuration, messages, widgets, scènes, documentation)           |
+| Spotify                   | Dans Gladys                                                                                                                             |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Appareils Spotify Connect | Un appareil par appareil en ligne : lecture, pause, précédent, suivant, volume, état lecture/pause                                      |
+| Playlists et titres       | Un appareil « Spotify » avec 3 listes de sélection (playlists, titres récents, favoris) lancées par Lecture                             |
+| Changements de lecture    | Déclencheurs de scène : lecture démarrée, lecture arrêtée, titre changé                                                                 |
+| Opérations de scène       | Actions de scène : lire un lien Spotify sur un appareil, mettre en pause, lire ce qui est en cours                                      |
+| Tableau de bord           | Widgets : en cours de lecture, lecture rapide (4 liens), lus récemment                                                                  |
+| Lecteur de musique        | Boîte musique de Gladys 5.3 : pochette, titre, artiste, progression, avance, aléatoire, répétition, parcours, recherche, file d’attente |
+| Disponibilité             | Badge Cloud sur chaque appareil, Injoignable tant que Spotify ne tourne pas dessus                                                      |
+| Langues                   | Anglais, français, allemand et espagnol (configuration, messages, widgets, scènes, documentation)                                       |
 
-Nécessite **Gladys 5.1.0** ou plus récent et un compte **Spotify Premium** : Spotify refuse les commandes de lecture
+Nécessite **Gladys 5.3.0** ou plus récent et un compte **Spotify Premium** : Spotify refuse les commandes de lecture
 des comptes gratuits.
 
 ## Architecture
@@ -109,7 +112,8 @@ sequenceDiagram
 Spotify ne pousse rien : l’intégration lit la lecture toutes les 15 secondes sur son propre minuteur (sans interrogation
 par Gladys), ne publie que les valeurs qui ont changé (renvoyées une fois par heure) et les événements de scène lors des
 transitions. Les listes de contenus sont lues toutes les 20 minutes et à la demande, les appareils en ligne une fois par
-minute pour le badge Cloud.
+minute pour le badge Cloud. La boîte musique du tableau de bord demande ses listes (parcours, recherche, file d’attente)
+et les pochettes à la demande : rien n’est stocké.
 
 ## Installation
 
@@ -152,10 +156,10 @@ autorisation.
 
 ## Appareils
 
-| Appareil                          | Fonctionnalités                                                                             |
-| --------------------------------- | ------------------------------------------------------------------------------------------- |
-| Chaque appareil Spotify Connect   | `music` lecture, pause, précédent, suivant, volume (0–100), état de lecture (lecture seule) |
-| « Spotify » (un par installation) | `text` liste de sélection × 3 : playlists, titres récents, favoris                          |
+| Appareil                          | Fonctionnalités                                                                                                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chaque appareil Spotify Connect   | `music` lecture, pause, précédent, suivant, volume (0–100), état de lecture (lecture/pause), titre, artiste, album, pochette, durée, position (avance), aléatoire, répétition |
+| « Spotify » (un par installation) | `text` liste de sélection × 3 : playlists, titres récents, favoris                                                                                                            |
 
 Choisir une option de l’appareil « Spotify » ne lance jamais rien tout seul : elle devient la **sélection en attente**,
 et le bouton Lecture de n’importe quel appareil Spotify Connect la lance. La valeur de chaque option est une simple URI
@@ -203,6 +207,36 @@ Exemples : _quand la lecture démarre sur « Salon », baisser les lumières_ ; 
   badge.
 
 L’image ci-dessus est générée à partir du code des widgets par `docs/illustrations/render.sh`.
+
+## Lecteur de musique
+
+Avec Gladys 5.3, chaque appareil Spotify Connect est un vrai lecteur dans la boîte **musique** du tableau de bord :
+pochette, titre, artiste et album, barre de progression que l’on peut faire glisser pour avancer, lecture/pause,
+précédent/suivant, aléatoire, répétition (non, tout, un titre) et volume. Ses boutons ouvrent :
+
+| Panneau        | Contenu                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------- |
+| Parcourir      | « Playlists », « Titres likés », « Écoutés récemment », puis les titres d’une playlist ou d’un album          |
+| Rechercher     | Titres, artistes, albums et playlists (10 au plus par type : la limite de Spotify pour une application perso) |
+| File d’attente | Ce que l’appareil actif joue ensuite ; un appui y saute                                                       |
+
+Un appui sur un résultat remplace la lecture en cours ; l’action de scène **Lancer une musique sur une enceinte** du cœur utilise le même
+catalogue. Les noms des trois dossiers sont fixes, en français, comme les préfixes des options de l’appareil
+« Spotify » : Gladys n’envoie pas de langue avec ces demandes.
+
+Limites de Spotify : pas de « lire ensuite » ni d’« ajouter à la file » (l’API Web n’ajoute qu’un seul titre à la fin
+de la file, le manifeste déclare donc `append: false`), pas d’arrêt (pause seulement) ni de sourdine ; les titres d’une
+playlist ne sont listés que pour vos playlists ou les playlists collaboratives (les autres se lisent en entier) ; la
+file d’attente n’existe que sur l’appareil actif. Les pochettes sont les images de 300 px et 64 px de Spotify, servies
+par l’intégration, jamais chargées par le navigateur.
+
+## Mise à jour depuis 1.5.x
+
+Nécessite **Gladys 5.3.0**. Les appareils, paramètres, widgets et scènes sont conservés tels quels, et les boutons
+existants continuent de fonctionner. Pour obtenir les nouvelles fonctionnalités du lecteur de musique, ouvrez l’onglet
+**Découverte** de l’intégration et cliquez sur **Mettre à jour** sur chaque appareil Spotify Connect : cela ajoute
+titre, artiste, album, pochette, durée, position, aléatoire et répétition, et rend l’état de lecture modifiable
+(lecture/pause). D’ici là, la boîte musique garde ses commandes classiques.
 
 ## Mise à jour depuis 1.4.x
 
