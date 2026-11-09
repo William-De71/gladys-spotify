@@ -20,8 +20,8 @@ set -euo pipefail
 repo="$(cd "$(dirname "$0")/../.." && pwd)"
 here="$repo/docs/illustrations"
 out="$repo/docs/assets"
-# The Gladys front the styles are taken from (master on 2026-10-13).
-gladys_ref="7d3129909dde677070db5614dcf1132c9fde001d"
+# The Gladys front the styles are taken from (master on 2026-11-09, Gladys 5).
+gladys_ref="52fd526a77b6df7e9e9e60bc7408a40418e127c3"
 gladys_raw="https://raw.githubusercontent.com/GladysAssistant/Gladys/${gladys_ref}/front/src"
 
 chrome="${CHROME:-$(ls -d "$HOME"/.cache/ms-playwright/chromium-*/chrome-linux*/chrome 2>/dev/null | tail -n1)}"
@@ -44,6 +44,10 @@ tar xzf "$work"/vendor/gladysassistant-theme-optimized-*.tgz -C "$work/vendor/th
 curl -fsS "$gladys_raw/components/boxs/external-widget/style.css" |
   sed -E 's/:global\(([^)]*)\)/\1/g; s/\.badge([^A-Za-z])/.wbadge\1/g' >"$work/widget.css"
 curl -fsS "$gladys_raw/style/dark-mode.css" -o "$work/dark-mode.css"
+# The "Horizon" glass theme of the Gladys 5 dashboard: glass cards, the
+# uppercase card title and the default scene behind them.
+curl -fsS "$gladys_raw/routes/dashboard/style.css" |
+  sed -E 's/:global\(([^)]*)\)/\1/g' >"$work/horizon.css"
 
 node "$here/gen.mjs" "$repo" "$work/contents.json"
 {
@@ -58,25 +62,26 @@ shot() {
     --allow-file-access-from-files --virtual-time-budget=4000 \
     --window-size="$size" --force-device-scale-factor=1.5 \
     --screenshot="$file" "file://$work/index.html?$query" >/dev/null 2>&1
-  local background
-  background="$(magick "$file" -format '%[pixel:p{2,2}]' info:)"
-  magick "$file" -trim -bordercolor "$background" -border 30 "$file"
+  magick "$file" -fuzz 2% -trim +repage -shave 2x2 +repage "$file"
 }
 
 for language in en fr de es; do
   shot "$out/widgets.$language.png" 1300,1400 "lang=$language&cards=now_playing,quick_play,recently_played"
 done
 
-# 256 colors keep the small colored dots and badges exact.
+# libimagequant keeps the small colored dots and the scene gradient; a
+# median-cut palette would grey them out. Truecolor when Pillow lacks it.
 python3 -I - "$out" <<'PY'
 import glob
 import sys
-from PIL import Image
+from PIL import Image, features
 
 for path in glob.glob(f"{sys.argv[1]}/widgets.*.png"):
     image = Image.open(path).convert("RGB")
-    image.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(
-        path, optimize=True
-    )
+    if features.check_feature("libimagequant"):
+        image = image.quantize(
+            colors=256, method=Image.Quantize.LIBIMAGEQUANT, dither=Image.Dither.FLOYDSTEINBERG
+        )
+    image.save(path, optimize=True)
 PY
 ls -l "$out"/widgets.*.png

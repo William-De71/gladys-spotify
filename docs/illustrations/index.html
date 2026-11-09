@@ -5,10 +5,25 @@
     <link rel="stylesheet" href="vendor/theme/package/dashboard.css" />
     <link rel="stylesheet" href="widget.css" />
     <link rel="stylesheet" href="dark-mode.css" />
+    <link rel="stylesheet" href="horizon.css" />
     <style>
       body {
-        background: #f5f7fb;
-        padding: 24px;
+        background: #fff;
+        margin: 0;
+        padding: 8px;
+      }
+      /* the page header of the theme shares the class name of the widget
+         header slot (a CSS module class in Gladys): keep it off the widget */
+      .card .header {
+        padding: 0;
+        background: none;
+        border-bottom: 0;
+      }
+      /* the dashboard scene, a margin around the cards for their shadow */
+      #stage {
+        display: inline-block;
+        overflow: hidden;
+        padding: 40px 44px 56px;
       }
       #row {
         display: flex;
@@ -27,7 +42,7 @@
     <script src="data.js"></script>
   </head>
   <body>
-    <div id="row"></div>
+    <div id="stage" class="glass-theme glassScene"><div id="row"></div></div>
     <script>
       if (new URLSearchParams(location.search).get('theme') === 'dark') {
         document.documentElement.classList.add('dark-mode');
