@@ -331,9 +331,7 @@ flowchart LR
   ne peut pas récupérer.
 - Exécution manuelle (**Actions → Release → Run workflow**) : `release-as` force une version, `dry-run` affiche la
   version et les notes sans rien publier.
-- **`main` protégée** : le job de publication déplace `main` vers le commit de version avec le `GITHUB_TOKEN`. Avec une
-  règle de protection de branche ou un ruleset, autorisez GitHub Actions à la contourner (Settings → Rules → Bypass
-  list), ou utilisez un jeton de GitHub App ; sinon le job `publish` échoue et indique comment terminer à la main.
+- **Branche protégée** : des rulesets imposent une pull request sur `main` et verrouillent les tags `v*` ; seuls le mainteneur et les deploy keys passent. La release pousse avec la deploy key de l’environnement `release` (secret `RELEASE_DEPLOY_KEY`, `main` seulement) : un run lancé depuis une autre branche ne l’obtient jamais. `build.yml` et `github-release.yml` ne démarrent pas sur un tag : la release les appelle, ou lancez-les à la main (Actions → Run workflow, avec `version` pour l’image) pour terminer une release.
 - Le paquet Docker doit être **public** (Package settings → Change visibility) pour que Gladys puisse le récupérer.
 
 ## Contribuer

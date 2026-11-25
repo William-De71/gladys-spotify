@@ -331,10 +331,7 @@ flowchart LR
   nicht ziehen kann.
 - Manueller Lauf (**Actions → Release → Run workflow**): `release-as` erzwingt eine Version, `dry-run` zeigt die
   Version und die Notizen an, ohne etwas zu veröffentlichen.
-- **Geschütztes `main`**: Der Release-Job verschiebt `main` mit dem `GITHUB_TOKEN` auf den Release-Commit. Erlauben Sie
-  bei einer Branch-Protection-Regel oder einem Ruleset GitHub Actions, sie zu umgehen (Settings → Rules → Bypass list),
-  oder verwenden Sie ein GitHub-App-Token; andernfalls schlägt der `publish`-Job fehl und erklärt, wie man von Hand
-  fortfährt.
+- **Geschützter Branch**: Rulesets verlangen einen Pull Request auf `main` und sperren die `v*`-Tags; nur der Maintainer und Deploy Keys kommen durch. Das Release pusht mit dem Deploy Key der Umgebung `release` (Secret `RELEASE_DEPLOY_KEY`, nur `main`): Ein Lauf von einem anderen Branch erhält ihn nie. `build.yml` und `github-release.yml` starten nicht bei einem Tag: Das Release ruft sie auf, oder starten Sie sie von Hand (Actions → Run workflow, mit `version` für das Image), um ein Release abzuschließen.
 - Das Docker-Paket muss **öffentlich** sein (Package settings → Change visibility), damit Gladys es ziehen kann.
 
 ## Mitwirken

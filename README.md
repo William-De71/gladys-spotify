@@ -318,9 +318,7 @@ flowchart LR
 - `main` only receives the bumped manifest once its image exists: the store never sees a version it cannot pull.
 - Manual run (**Actions → Release → Run workflow**): `release-as` forces a version, `dry-run` shows the version and
   the notes without publishing anything.
-- **Protected `main`**: the release job moves `main` to the release commit with the `GITHUB_TOKEN`. With a branch
-  protection rule or a ruleset, allow GitHub Actions to bypass it (Settings → Rules → Bypass list), or use a GitHub
-  App token; otherwise the `publish` job fails and says how to finish by hand.
+- **Protected branch**: rulesets require a pull request on `main` and lock the `v*` tags; only the maintainer and deploy keys get through. The release pushes with the deploy key of the `release` environment (secret `RELEASE_DEPLOY_KEY`, `main` only): a run from another branch never gets it. `build.yml` and `github-release.yml` do not start on a tag: the release calls them, or run them by hand (Actions → Run workflow, with `version` for the image) to finish a release.
 - The Docker package must be **public** (Package settings → Change visibility) for Gladys to pull it.
 
 ## Contributing
